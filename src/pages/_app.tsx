@@ -1,5 +1,6 @@
 import { ChakraProvider } from "@chakra-ui/react";
 import { AppProps } from "next/app"
+import { AuthProvider } from "../Contexts/AuthContext";
 
 // https://github.com/carlson-technologies/coffeeclass.io
 // https://github.com/dingran/ghost-utils
@@ -9,9 +10,11 @@ import { AppProps } from "next/app"
 
 function MyApp({ Component, pageProps }: AppProps) {
   return(
-     <ChakraProvider>
-      <Component {...pageProps} />
-     </ChakraProvider>
+    <AuthProvider>
+      <ChakraProvider>
+        <Component {...pageProps} />
+      </ChakraProvider>
+     </AuthProvider>
   ); 
 }
 
