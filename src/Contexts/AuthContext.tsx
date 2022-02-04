@@ -9,54 +9,54 @@ interface IUser extends User {
 
 interface IAuthentication {
     user: IUser | null,
+    role: string,
+    isAuthenticated: boolean,
     login: () => void,
     logout: () => void,
-    role: () => Promise<string>,
+    // getDbLoggedProfile: () => Promise<string>
 };
 
 const authentication = auth;
 const database = db;
 
 const AuthContext = createContext<IAuthentication>({
-    user: null,
     login: async () => {},
     logout: () => {},
-    role: async () => new Promise<string>(()=> 'zz'),
+    user: null,
+    role: '',
+    isAuthenticated: false,
+    // getDbLoggedProfile: async () => new Promise<string>(() => '')
 });
 
 const AuthProvider: FC = ({ children }) => {
     const [user, setUser] = useState<IUser | null>(null);
-    const [roleProfile, setRoleProfile] = useState<string>('xx');
+    const [role, setRole] = useState<string>('');
 
     useEffect(()=> {
+console.debug('AuthProvider-useEffect-1-role', role);
+console.debug('AuthProvider-useEffect-1-user', user);
         const unsubscribe = onAuthStateChanged(authentication, (user) => {
             const res = user as IUser;
-            // if(res) {
-            //     getDoc(doc(database, 'users', res.uid)).then( (snap) =>{
-            //         res.role = snap.get('role');
-            //     });
-            // }
+            console.debug('result-unsubscribe', res);
             setUser(res != null ? res : null);
         });
-
         return unsubscribe;
     }, []);
 
-//     useEffect(() => {
-// console.log('passo 3');
-//             if(user) {
-// console.log('passo 4');
-//                 const ref = doc(database, 'users', user.uid);
-//                 getDoc(ref).then((snap) => {
-//                     setRoleProfile(snap.get('role'))
-//                 });
-//             }
-//     }, [roleProfile]);
+    useEffect(()=> {
+console.debug('AuthProvider-useEffect-2-role', role);
+console.debug('AuthProvider-useEffect-2-user', user);
+
+        getDbLoggedProfile().then((result) => {
+            console.debug('result-effect', result);
+            setRole(result);
+        });
+    }, [user]);
 
     const login = async () => {
         try {
             const { user } = await signInWithPopup(authentication, new GoogleAuthProvider());
-            const res = user as IUser;
+            let res = user as IUser;
 
             const ref = doc(database, 'users', res.uid);
             const snap = await getDoc(ref);
@@ -73,7 +73,8 @@ const AuthProvider: FC = ({ children }) => {
                     createdAt: serverTimestamp()
                   });
             }
-            setRoleProfile(snap.get('role'));
+            res.role = snap.get('role');
+            setRole(snap.get('role'));
             setUser(res);
         } catch (error) {
             console.error(error);
@@ -88,26 +89,22 @@ const AuthProvider: FC = ({ children }) => {
         }
     }
 
-    const role = async () => {
+    const getDbLoggedProfile = async () => {
         try {
-console.log('passo 1');
-            if(user) {
-console.log('passo 2');
+            if(role === '' && user) {
                 const ref = doc(database, 'users', user.uid);
-                getDoc(ref).then((snap) => {
-                    setRoleProfile(snap.get('role'));
-                    return snap.get('role');
-                });
+                const snap = await getDoc(ref);
+console.debug('getDbLoggedProfile', snap);
+                return snap.get('role');
             }
-            return roleProfile;
+            return '';
         } catch (error) {
             console.error(error);
-            return '';
         }
     }
 
     return (
-        <AuthContext.Provider value={{ user, login, logout, role }}>
+        <AuthContext.Provider value={{ isAuthenticated: !!user, user, role, login, logout }}>
             { children }
         </AuthContext.Provider>
     );

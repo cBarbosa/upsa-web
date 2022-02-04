@@ -32,19 +32,8 @@ export default class MyDocument extends Document {
             <Html>
                 <GoogleFonts href="https://fonts.googleapis.com/css?family=Inter&display=swap" />
                 <Head>
-                    <title>UPSA</title>
                     {process.env.NODE_ENV === "production" && (
                         <>
-                            {/* Google Adsense */}
-                            <script
-                                async
-                                src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8586017200531248"
-                                crossOrigin="anonymous"
-                            ></script>
-
-                            {/* Splitbee Analytics */}
-                            <script async src="https://cdn.splitbee.io/sb.js"></script>
-
                             {/* Global Site Tag (gtag.js) - Google Analytics */}
                             <script
                                 async

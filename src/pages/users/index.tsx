@@ -1,9 +1,8 @@
 import { collection, doc, getDocs, query, updateDoc, where } from 'firebase/firestore';
-import React from 'react';
+import React, { Fragment } from 'react';
 import { useEffect, useState } from 'react';
 import { useAuth } from '../../Contexts/AuthContext';
 import { db } from '../../services/firebase';
-
 import {
     Text,
     Box,
@@ -17,11 +16,22 @@ import {
     Divider,
     useDisclosure,
     Stack,
-    IconButton
+    IconButton,
+    Table,
+    TableCaption,
+    Thead,
+    Tr,
+    Th,
+    Tbody,
+    Td,
+    Tfoot
  } from '@chakra-ui/react';
- import { EditIcon } from '@chakra-ui/icons';
-
- import { Avatar } from '@chakra-ui/react'
+import { EditIcon } from '@chakra-ui/icons';
+import { Avatar } from '@chakra-ui/react';
+import { GetServerSideProps } from 'next';
+import { useRouter } from 'next/router';
+import NavBar from '../../Components/NavBar';
+import BottomNav from '../../Components/BottomNav';
 
 type UserType = {
     uid: string;
@@ -47,15 +57,22 @@ type UserType = {
 //     }
 // };
 
-export default function UsersPage() {
+export default function UsersPage( {data}:any) {
     const database = db;
-    const usersCollection = collection(db, 'users');
+    const usersCollection = collection(database, 'users');
 
-    const { user } = useAuth();
+    const { user, role, isAuthenticated } = useAuth();
     const { isOpen, onOpen, onClose } = useDisclosure();
+    const router = useRouter();
     const [ users, setUsers ] = useState<UserType[]>([]);
     const [ editUser, setEditUser ] = useState<UserType | null>(null);
     const [ editProfile, setEditProfile ] = useState<string>('none');
+
+    // useEffect( () => {
+    //     if (role != '' && role != 'admin') {
+    //         router.push('/');
+    //     }
+    //  },[role]);
 
     useEffect( () => {
         getUsers();
@@ -112,28 +129,63 @@ console.debug(editUser);
     };
 
     return(
-        <>
-            <Heading as={'h3'}>
+        <Fragment>
+            <NavBar/>
+            <Heading p={3}>
                 Usuários
             </Heading>
 
-            <Box>
-                <pre>{JSON.stringify(user, null, 2)}</pre>
-            </Box>
-            <Flex>
-                {users.map((item)=> {
-                    return (
-                            <Box
-                                key={item.uid}>
-                                    <Avatar
-                                        name={item.displayName}
-                                        src={item.photoURL}
-                                        size={'sm'}
-                                    />
-                                { item.displayName } <br />
-                                { item.email } <br />
-                                { item.role } <br />
+            {users.length === 0 && (
+                <Box>
+                    <Text>
+                        Não existe usuário para liberação
+                    </Text>
+                </Box>
+            )}
 
+            {users.length > 0 && (
+                <Flex>
+                    <Table variant={'striped'} colorScheme={'blackAlpha'}>
+                    <TableCaption>Lista de usuários do sistema</TableCaption>
+                    <Thead>
+                        <Tr>
+                            <Th>Nome</Th>
+                            <Th>Email</Th>
+                            <Th>Permissão</Th>
+                            <Th>Dt. Criação</Th>
+                            <Th></Th>
+                        </Tr>
+                    </Thead>
+                    <Tbody>
+                    {users.map((item)=> {
+                        return (
+                        <Tr key={item.uid}>
+                            <Td>
+                                <Avatar
+                                    name={item.displayName}
+                                    src={item.photoURL}
+                                    size={'sm'}
+                                />
+                                <Text>
+                                    {item.displayName}
+                                </Text>
+                            </Td>
+                            <Td>
+                                <Text>
+                                    {item.email}
+                                </Text>
+                            </Td>
+                            <Td>
+                                <Text>
+                                    {item.role}
+                                </Text>
+                            </Td>
+                            <Td>
+                                <Text>
+                                    {item.createdAt}
+                                </Text>
+                            </Td>
+                            <Td>
                                 <IconButton
                                     ml={4}
                                     size='md'
@@ -143,11 +195,54 @@ console.debug(editUser);
                                     icon={<EditIcon />}
                                     onClick={()=>{updateUserModal(item)}}
                                 />
-
-                            </Box>
+                            </Td>
+                        </Tr>
                         )
-                })}
-            </Flex>
+                        })}
+                    </Tbody>
+                    <Tfoot>
+                        <Tr>
+                            <Th>Nome</Th>
+                            <Th>Email</Th>
+                            <Th>Permissão</Th>
+                            <Th>Dt. Criação</Th>
+                            <Th></Th>
+                        </Tr>
+                    </Tfoot>
+                    </Table>
+                    {/* {users.map((item)=> {
+                        return (
+                                <Box
+                                    key={item.uid}>
+                                        <Avatar
+                                            name={item.displayName}
+                                            src={item.photoURL}
+                                            size={'sm'}
+                                        />
+                                        <Stack direction={'row'}>
+                                            <Text>{ item.displayName }</Text>
+                                            <Text>{ item.email }</Text>
+                                            <Text>{ item.role }</Text>
+                                            <Text>{ item.createdAt }</Text>
+
+                                            <IconButton
+                                                ml={4}
+                                                size='md'
+                                                colorScheme='blue'
+                                                variant='outline'
+                                                aria-label='Editar cadastro'
+                                                icon={<EditIcon />}
+                                                onClick={()=>{updateUserModal(item)}}
+                                            />
+                                    </Stack>
+
+                                </Box>
+                            )
+                    })} */}
+                </Flex>
+            )}
+            
+            <BottomNav />
 
             <Modal
                 isOpen={isOpen}
@@ -239,6 +334,45 @@ console.debug(editUser);
                 </ModalFooter>
                 </ModalContent>
             </Modal>
-        </>
+        </Fragment>
     );
 };
+
+
+
+export const getServerSideProps: GetServerSideProps = async (ctx) => {
+    // const database = db;
+    // const usersCollection = collection(db, 'users');
+
+    // let result:UserType[] = [];
+
+    // const getUsers = async () => {
+    //     const usersQuery = query(usersCollection, where('role', '!=', 'admin'));
+    //     const querySnapshot = await getDocs(usersQuery);
+    //     // const result: QueryDocumentSnapshot<DocumentData>[] = [];
+        
+    //     querySnapshot.forEach((snapshot) => {
+    //         result.push({
+    //             uid: snapshot.id,
+    //             displayName: snapshot.data().displayName,
+    //             role: snapshot.data().role,
+    //             email: snapshot.data().email,
+    //             photoURL: snapshot.data().photoURL,
+    //             // createdAt: snapshot.data().createdAt.toDate().toLocaleDateString('pt-BR', {
+    //             //     day: '2-digit',
+    //             //     month: 'long',
+    //             //     year: 'numeric'
+    //             // })
+    //             createdAt: snapshot.data().createdAt.toDate().toLocaleDateString('pt-BR')
+    //         } as UserType);
+    //     });
+    // };
+
+    return {
+        props: {
+            // users: result,
+            protected: true,
+            userTypes: ['admin']
+        }
+    };
+}
