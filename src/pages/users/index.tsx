@@ -1,8 +1,8 @@
-import { collection, doc, getDocs, query, updateDoc, where } from 'firebase/firestore';
-import React, { Fragment } from 'react';
-import { useEffect, useState } from 'react';
-import { useAuth } from '../../Contexts/AuthContext';
-import { db } from '../../services/firebase';
+import {collection, doc, getDocs, query, updateDoc, where} from 'firebase/firestore';
+import React, {Fragment} from 'react';
+import {useEffect, useState} from 'react';
+import {useAuth} from '../../Contexts/AuthContext';
+import {db} from '../../services/firebase';
 import {
     Text,
     Box,
@@ -24,14 +24,16 @@ import {
     Th,
     Tbody,
     Td,
-    Tfoot
- } from '@chakra-ui/react';
-import { EditIcon } from '@chakra-ui/icons';
-import { Avatar } from '@chakra-ui/react';
-import { GetServerSideProps } from 'next';
-import { useRouter } from 'next/router';
+    Tfoot,
+    Container
+} from '@chakra-ui/react';
+import {EditIcon} from '@chakra-ui/icons';
+import {Avatar} from '@chakra-ui/react';
+import {GetServerSideProps} from 'next';
+import {useRouter} from 'next/router';
 import NavBar from '../../Components/NavBar';
 import BottomNav from '../../Components/BottomNav';
+import {parseCookies} from "nookies";
 
 type UserType = {
     uid: string;
@@ -57,16 +59,16 @@ type UserType = {
 //     }
 // };
 
-export default function UsersPage( {data}:any) {
+export default function UsersPage({data}: any) {
     const database = db;
     const usersCollection = collection(database, 'users');
 
-    const { user, role, isAuthenticated } = useAuth();
-    const { isOpen, onOpen, onClose } = useDisclosure();
+    const {user, role, isAuthenticated} = useAuth();
+    const {isOpen, onOpen, onClose} = useDisclosure();
     const router = useRouter();
-    const [ users, setUsers ] = useState<UserType[]>([]);
-    const [ editUser, setEditUser ] = useState<UserType | null>(null);
-    const [ editProfile, setEditProfile ] = useState<string>('none');
+    const [users, setUsers] = useState<UserType[]>([]);
+    const [editUser, setEditUser] = useState<UserType | null>(null);
+    const [editProfile, setEditProfile] = useState<string>('none');
 
     // useEffect( () => {
     //     if (role != '' && role != 'admin') {
@@ -74,16 +76,16 @@ export default function UsersPage( {data}:any) {
     //     }
     //  },[role]);
 
-    useEffect( () => {
+    useEffect(() => {
         getUsers();
-     },[]);
+    }, []);
 
-     const getUsers = async () => {
+    const getUsers = async () => {
         const usersQuery = query(usersCollection, where('role', '!=', 'admin'));
         const querySnapshot = await getDocs(usersQuery);
-        
+
         // const result: QueryDocumentSnapshot<DocumentData>[] = [];
-        const result:UserType[] = [];
+        const result: UserType[] = [];
         querySnapshot.forEach((snapshot) => {
             result.push({
                 uid: snapshot.id,
@@ -110,7 +112,7 @@ export default function UsersPage( {data}:any) {
     const _handleUpdateUser = async () => {
 
         try {
-            const _user = doc(db,`users/${editUser?.uid}`);
+            const _user = doc(db, `users/${editUser?.uid}`);
 
             await updateDoc(_user, {
                 role: editProfile
@@ -125,92 +127,110 @@ export default function UsersPage( {data}:any) {
     };
 
     const _handleDeleteuser = async () => {
-console.debug(editUser);
+        console.debug(editUser);
     };
 
-    return(
+    const roles = (role: string) => {
+        switch (role) {
+            case 'avocado':
+                return 'Advogado'
+                break;
+            case 'admin':
+                return 'Administrador'
+                break;
+            case 'analyst':
+                return 'Analista'
+                break;
+            case 'candidate':
+                return 'Candidato'
+                break;
+            case 'none':
+                return 'Sem permissão'
+                break;
+            default:
+                return 'Sem regra';
+        }
+    }
+
+    return (
         <Fragment>
             <NavBar/>
-            <Heading p={3}>
-                Usuários
-            </Heading>
+            <Container minH={'calc(100vh - 142px)'} maxW='container.xl' py={10}>
+                <Heading  color={'gray.600'}>
+                    Usuários
+                </Heading>
 
-            {users.length === 0 && (
-                <Box>
-                    <Text>
-                        Não existe usuário para liberação
-                    </Text>
-                </Box>
-            )}
+                {users.length === 0 && (
+                    <Box py={10}>
+                        <Text>
+                            Não existe usuário para liberação
+                        </Text>
+                    </Box>
+                )}
 
-            {users.length > 0 && (
-                <Flex>
-                    <Table variant={'striped'} colorScheme={'blackAlpha'}>
-                    <TableCaption>Lista de usuários do sistema</TableCaption>
-                    <Thead>
-                        <Tr>
-                            <Th>Nome</Th>
-                            <Th>Email</Th>
-                            <Th>Permissão</Th>
-                            <Th>Dt. Criação</Th>
-                            <Th></Th>
-                        </Tr>
-                    </Thead>
-                    <Tbody>
-                    {users.map((item)=> {
-                        return (
-                        <Tr key={item.uid}>
-                            <Td>
-                                <Avatar
-                                    name={item.displayName}
-                                    src={item.photoURL}
-                                    size={'sm'}
-                                />
-                                <Text>
-                                    {item.displayName}
-                                </Text>
-                            </Td>
-                            <Td>
-                                <Text>
-                                    {item.email}
-                                </Text>
-                            </Td>
-                            <Td>
-                                <Text>
-                                    {item.role}
-                                </Text>
-                            </Td>
-                            <Td>
-                                <Text>
-                                    {item.createdAt}
-                                </Text>
-                            </Td>
-                            <Td>
-                                <IconButton
-                                    ml={4}
-                                    size='md'
-                                    colorScheme='blue'
-                                    variant='outline'
-                                    aria-label='Editar cadastro'
-                                    icon={<EditIcon />}
-                                    onClick={()=>{updateUserModal(item)}}
-                                />
-                            </Td>
-                        </Tr>
-                        )
-                        })}
-                    </Tbody>
-                    <Tfoot>
-                        <Tr>
-                            <Th>Nome</Th>
-                            <Th>Email</Th>
-                            <Th>Permissão</Th>
-                            <Th>Dt. Criação</Th>
-                            <Th></Th>
-                        </Tr>
-                    </Tfoot>
-                    </Table>
-                    {/* {users.map((item)=> {
+                {users.length > 0 && (
+                    <Flex py={10}>
+                        <Table variant={'striped'} colorScheme={'gray'}>
+                            <TableCaption>Lista de usuários do sistema</TableCaption>
+                            <Thead>
+                                <Tr>
+                                    <Th>Nome</Th>
+                                    <Th>Email</Th>
+                                    <Th>Permissão</Th>
+                                    <Th>Dt. Criação</Th>
+                                    <Th></Th>
+                                </Tr>
+                            </Thead>
+                            <Tbody>
+                                {users.map((item) => {
+                                    return (
+                                        <Tr key={item.uid}>
+                                            <Td>
+                                                <Box display={'flex'} flexDirection={'row'} alignItems={'center'}>
+                                                    <Avatar
+                                                        name={item.displayName}
+                                                        src={item.photoURL}
+                                                        size={'sm'}
+                                                    />
+                                                    <Text ml={4}>
+                                                        {item.displayName}
+                                                    </Text>
+                                                </Box>
+                                            </Td>
+                                            <Td>
+                                                <Text>
+                                                    {item.email}
+                                                </Text>
+                                            </Td>
+                                            <Td>
+                                                <Text>
+                                                    {roles(item.role)}
+                                                </Text>
+                                            </Td>
+                                            <Td>
+                                                <Text>
+                                                    {item.createdAt}
+                                                </Text>
+                                            </Td>
+                                            <Td>
+                                                <IconButton
+                                                    ml={4}
+                                                    size='md'
+                                                    colorScheme='blue'
+                                                    variant='outline'
+                                                    aria-label='Editar cadastro'
+                                                    icon={<EditIcon/>}
+                                                    onClick={() => {
+                                                        updateUserModal(item)
+                                                    }}
+                                                />
+                                            </Td>
+                                        </Tr>
+                                    )
+                                })}
+                            </Tbody>
+                        </Table>
+                        {/* {users.map((item)=> {
                         return (
                                 <Box
                                     key={item.uid}>
@@ -239,105 +259,104 @@ console.debug(editUser);
                                 </Box>
                             )
                     })} */}
-                </Flex>
-            )}
-            
-            <BottomNav />
+                    </Flex>
+                )}
+            </Container>
+            <BottomNav/>
 
             <Modal
                 isOpen={isOpen}
                 onClose={onClose}
                 closeOnOverlayClick={false}
             >
-                <ModalOverlay />
+                <ModalOverlay/>
                 <ModalContent>
                     <ModalHeader>Dados do usuário</ModalHeader>
-                    <ModalCloseButton />
+                    <ModalCloseButton/>
                     <ModalBody pb={6}>
-                    <FormControl>
-                        <FormLabel>Nome</FormLabel>
-                        <Input
-                            placeholder='Display Name'
-                            variant={'filled'}
-                            disabled={true}
-                            value={ editUser?.displayName || ''}
-                        />
-                    </FormControl>
+                        <FormControl>
+                            <FormLabel>Nome</FormLabel>
+                            <Input
+                                placeholder='Display Name'
+                                variant={'filled'}
+                                disabled={true}
+                                value={editUser?.displayName || ''}
+                            />
+                        </FormControl>
 
-                    <FormControl mt={4}>
-                        <FormLabel>Email</FormLabel>
-                        <Input
-                            placeholder='Email'
-                            variant={'filled'}
-                            disabled={true}
-                            value={ editUser?.email || ''}
-                        />
-                    </FormControl>
+                        <FormControl mt={4}>
+                            <FormLabel>Email</FormLabel>
+                            <Input
+                                placeholder='Email'
+                                variant={'filled'}
+                                disabled={true}
+                                value={editUser?.email || ''}
+                            />
+                        </FormControl>
 
-                    <FormControl mt={4}>
-                        <FormLabel>Perfil</FormLabel>
+                        <FormControl mt={4}>
+                            <FormLabel>Perfil</FormLabel>
                             <Select
-                                    placeholder='Escolha o perfil'
-                                    size={'md'}
-                                    variant={'flushed'}
-                                    value={editProfile}
-                                    onChange={(event) => setEditProfile(event.target.value) }
+                                placeholder='Escolha o perfil'
+                                size={'md'}
+                                variant={'flushed'}
+                                value={editProfile}
+                                onChange={(event) => setEditProfile(event.target.value)}
                             >
-                                <option value='none' selected={editUser?.role=='none'} >Candidato</option>
-                                <option value='analyst' selected={editUser?.role=='analyst'} >Analista</option>
-                                <option value='avocado' selected={editUser?.role=='avocado'} >Advogado</option>
+                                <option value='none' selected={editUser?.role == 'none'}>Candidato</option>
+                                <option value='analyst' selected={editUser?.role == 'analyst'}>Analista</option>
+                                <option value='avocado' selected={editUser?.role == 'avocado'}>Advogado</option>
                             </Select>
-                    </FormControl>
+                        </FormControl>
 
-                    <Divider orientation='horizontal' />
+                        <Divider orientation='horizontal'/>
 
-                    <Stack
-                        direction={['column', 'row']}
-                        pt={6}
-                    >
-                        <Text
-                            fontSize={'md'}
-                            as={'i'}
+                        <Stack
+                            direction={['column', 'row']}
+                            pt={6}
                         >
-                            Cadastrado em:
-                        </Text>
+                            <Text
+                                fontSize={'md'}
+                                as={'i'}
+                            >
+                                Cadastrado em:
+                            </Text>
 
-                        <Text
-                            fontSize={'md'}
-                            color='tomato'
-                            as={'i'}
+                            <Text
+                                fontSize={'md'}
+                                color='tomato'
+                                as={'i'}
+                            >
+                                {editUser?.createdAt}
+                            </Text>
+                        </Stack>
+
+                    </ModalBody>
+
+                    <ModalFooter>
+                        <Button
+                            colorScheme='blue'
+                            mr={3}
+                            onClick={_handleUpdateUser}
                         >
-                            {editUser?.createdAt}
-                        </Text>
-                    </Stack>
-
-                </ModalBody>
-
-                <ModalFooter>
-                    <Button
-                        colorScheme='blue'
-                        mr={3}
-                        onClick={_handleUpdateUser}
-                    >
-                        Salvar
-                    </Button>
-                    <Button
-                        colorScheme='red'
-                        mr={3}
-                        onClick={_handleDeleteuser}
-                    >
-                        Deletar
-                    </Button>
-                    <Button onClick={onClose}>
-                        Cancelar
-                    </Button>
-                </ModalFooter>
+                            Salvar
+                        </Button>
+                        <Button
+                            colorScheme='red'
+                            mr={3}
+                            onClick={_handleDeleteuser}
+                        >
+                            Deletar
+                        </Button>
+                        <Button onClick={onClose}>
+                            Cancelar
+                        </Button>
+                    </ModalFooter>
                 </ModalContent>
             </Modal>
         </Fragment>
     );
 };
-
 
 
 export const getServerSideProps: GetServerSideProps = async (ctx) => {
@@ -350,7 +369,7 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
     //     const usersQuery = query(usersCollection, where('role', '!=', 'admin'));
     //     const querySnapshot = await getDocs(usersQuery);
     //     // const result: QueryDocumentSnapshot<DocumentData>[] = [];
-        
+
     //     querySnapshot.forEach((snapshot) => {
     //         result.push({
     //             uid: snapshot.id,
@@ -368,11 +387,18 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
     //     });
     // };
 
-    return {
-        props: {
-            // users: result,
-            protected: true,
-            userTypes: ['admin']
+    const {['upsa.role']: upsaRole} = parseCookies(ctx);
+    const acceptedRules = ['admin']
+    if (!acceptedRules.includes(upsaRole)) {
+        return {
+            redirect: {
+                destination: '/',
+                permanent: false,
+            },
         }
+    }
+
+    return {
+        props: {}
     };
 }

@@ -2,6 +2,7 @@ import { GoogleAuthProvider, onAuthStateChanged, signInWithPopup, signOut, User 
 import { doc, getDoc, serverTimestamp, setDoc } from "firebase/firestore";
 import { createContext, FC, useContext, useEffect, useState } from "react";
 import { auth, db } from "../services/firebase";
+import {destroyCookie, setCookie} from 'nookies'
 
 interface IUser extends User {
     role: string;
@@ -69,6 +70,9 @@ const AuthProvider: FC = ({ children }) => {
             res.role = snap.get('role');
             setRole(snap.get('role'));
             setUser(res);
+            setCookie(null, 'upsa.role', snap.get('role'), {
+                maxAge: 30 * 24 * 60 * 60,
+            })
         } catch (error) {
             console.error(error);
         }
@@ -76,7 +80,9 @@ const AuthProvider: FC = ({ children }) => {
 
     const logout = async () => {
         try {
-            await signOut(authentication);
+            await signOut(authentication).then(r => {
+                destroyCookie(null, 'upsa.role')
+            });
         } catch (error) {
             console.error(error);
         }
