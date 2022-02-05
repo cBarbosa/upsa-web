@@ -52,8 +52,6 @@ export default Home;
 export const getServerSideProps: GetServerSideProps = async (ctx) => {
     
   return {
-      props: {
-        protected: true
-      }
+      props: { }
   };
 }

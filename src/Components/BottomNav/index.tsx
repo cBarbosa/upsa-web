@@ -7,6 +7,7 @@ export default function BottomNav() {
         <Fragment>
         <hr/>
         <Box
+            as={'footer'}
             pb={3}
             pt={3}
             bg={'gray.50'}

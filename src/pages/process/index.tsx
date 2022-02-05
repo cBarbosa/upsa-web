@@ -1,4 +1,4 @@
-import { Box, Flex, Heading, Text} from '@chakra-ui/react';
+import { Box, Button, Flex, Heading, Modal, ModalBody, ModalCloseButton, ModalContent, ModalFooter, ModalHeader, ModalOverlay, Text, useDisclosure} from '@chakra-ui/react';
 import { collection, getDocs, query, where } from 'firebase/firestore';
 import type { GetServerSideProps, NextPage } from 'next';
 import Head from 'next/head'
@@ -28,17 +28,17 @@ type ProcessType = {
 };
 
 const ProcessListPage: NextPage = () => {
-    const { user, login } = useAuth();
-    const database = db;
-    const proccessCollection = collection(database, 'proccess');
-
-    const [ process, setProcess ] = useState<ProcessType[]>([]);
+  const database = db;
+  const proccessCollection = collection(database, 'proccess');  
+  const { user, role, login } = useAuth();
+  const { isOpen, onOpen, onClose } = useDisclosure();
+  const [ process, setProcess ] = useState<ProcessType[]>([]);
 
     useEffect( () => {
       getProcess();
    },[]);
 
-   const getProcess = async () => {
+  const getProcess = async () => {
     const processQuery = query(proccessCollection, where('active', '==', true));
     const querySnapshot = await getDocs(processQuery);
 
@@ -58,7 +58,11 @@ const ProcessListPage: NextPage = () => {
         } as ProcessType);
     });
     setProcess(result);
-};
+  };
+
+  const _handleAddProcess = async () => {
+    onOpen();
+  };
 
     return (
       <Fragment>
@@ -70,6 +74,13 @@ const ProcessListPage: NextPage = () => {
         <Heading p={3}>
             Processos
         </Heading>
+        <Flex alignContent={'right'}>
+          <Button
+            onClick={_handleAddProcess}
+          >
+            Adicionar
+          </Button>
+        </Flex>
 
         <Flex p={4}>
           {process.length > 0 ? process.map(process => {
@@ -92,6 +103,41 @@ const ProcessListPage: NextPage = () => {
         </Flex>
 
         <BottomNav />
+
+        <Modal
+            isOpen={isOpen}
+            onClose={onClose}
+            closeOnOverlayClick={false}
+          >
+            <ModalOverlay />
+                <ModalContent>
+                <ModalHeader>Dados do processo</ModalHeader>
+                <ModalCloseButton />
+                <ModalBody pb={6}>
+
+                </ModalBody>
+
+                <ModalFooter>
+                    <Button
+                        colorScheme='blue'
+                        mr={3}
+                    >
+                        Salvar
+                    </Button>
+                    <Button
+                        colorScheme='red'
+                        mr={3}
+                        hidden={true}
+                    >
+                        Deletar
+                    </Button>
+                    <Button
+                    >
+                        Cancelar
+                    </Button>
+                </ModalFooter>
+                </ModalContent>
+        </Modal>
       </Fragment>
   )
 }

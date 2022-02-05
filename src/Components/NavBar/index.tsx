@@ -16,7 +16,8 @@ import {
   useColorModeValue,
   Stack,
   Center,
-  Text
+  Text,
+  Image
 } from '@chakra-ui/react';
 import { HamburgerIcon, CloseIcon } from '@chakra-ui/icons';
 import { LinkProps as ChakraLinkProps } from "@chakra-ui/react";
@@ -25,10 +26,12 @@ import { useRouter } from 'next/router';
 import { FcGoogle } from 'react-icons/fc';
 
 const Links = [
-    { label: 'Dashboard', to: '/dashboard' },
+    { label: 'Dashboard', to: '/' },
     { label: 'Usuários', to: '/users' },
     { label: 'Processos', to: '/process' },
-    { label: 'Pendências', to: '/pendencias' },
+    { label: 'Pendências', to: '/pending' },
+    { label: 'Advogado', to: '/profile/avocado' },
+    { label: 'Analista', to: '/profile/analyst' },
 ];
 
 interface NavLinkProps extends ChakraLinkProps {
@@ -78,7 +81,9 @@ export default function NavBar() {
                 onClick={isOpen ? onClose : onOpen}
             />
             <HStack spacing={8} alignItems={'center'}>
-                <Box>UPSA</Box>
+                <Box>
+                    <Image src='/assets/images/logomarca.jpg' height={20} p={3} alt={'UPSA'} />
+                </Box>
                 <HStack
                     as={'nav'}
                     spacing={4}

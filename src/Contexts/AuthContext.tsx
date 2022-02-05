@@ -33,22 +33,15 @@ const AuthProvider: FC = ({ children }) => {
     const [role, setRole] = useState<string>('');
 
     useEffect(()=> {
-console.debug('AuthProvider-useEffect-1-role', role);
-console.debug('AuthProvider-useEffect-1-user', user);
         const unsubscribe = onAuthStateChanged(authentication, (user) => {
             const res = user as IUser;
-            console.debug('result-unsubscribe', res);
             setUser(res != null ? res : null);
         });
         return unsubscribe;
     }, []);
 
     useEffect(()=> {
-console.debug('AuthProvider-useEffect-2-role', role);
-console.debug('AuthProvider-useEffect-2-user', user);
-
         getDbLoggedProfile().then((result) => {
-            console.debug('result-effect', result);
             setRole(result);
         });
     }, [user]);
@@ -94,7 +87,6 @@ console.debug('AuthProvider-useEffect-2-user', user);
             if(role === '' && user) {
                 const ref = doc(database, 'users', user.uid);
                 const snap = await getDoc(ref);
-console.debug('getDbLoggedProfile', snap);
                 return snap.get('role');
             }
             return '';

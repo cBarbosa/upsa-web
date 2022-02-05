@@ -4,16 +4,16 @@ import BottomNav from "../../../Components/BottomNav";
 import NavBar from "../../../Components/NavBar";
 import { useAuth } from "../../../Contexts/AuthContext";
 
-const AvocadoHome: NextPage = () => {
+const AnalystHome: NextPage = () => {
   
     const { isAuthenticated, role } = useAuth();
 
     return (
         <>
           <Head>
-            <title>UPSA - Advogado</title>
+            <title>UPSA - Analista</title>
           </Head>
-
+  
           <NavBar/>
   
           isAuthenticated: {isAuthenticated}<br />
@@ -24,14 +24,14 @@ const AvocadoHome: NextPage = () => {
     );
 }
   
-export default AvocadoHome;
+export default AnalystHome;
 
 export const getServerSideProps: GetServerSideProps = async (ctx) => {
 
     return {
         props: {
           protected: true,
-          userTypes: ['avocado']
+          userTypes: ['analyst']
         }
     };
 }
