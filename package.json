@@ -22,7 +22,8 @@
     "nookies": "^2.5.2",
     "react": "17.0.2",
     "react-dom": "17.0.2",
-    "react-icons": "^4.3.1"
+    "react-icons": "^4.3.1",
+    "react-table": "^7.7.0"
   },
   "devDependencies": {
     "@types/node": "^17.0.8",

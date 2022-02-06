@@ -1,5 +1,5 @@
 import {collection, doc, getDocs, query, updateDoc, where} from 'firebase/firestore';
-import React, {Fragment} from 'react';
+import React, {Fragment, useMemo} from 'react';
 import {useEffect, useState} from 'react';
 import {useAuth} from '../../Contexts/AuthContext';
 import {db} from '../../services/firebase';
@@ -34,6 +34,7 @@ import {useRouter} from 'next/router';
 import NavBar from '../../Components/NavBar';
 import BottomNav from '../../Components/BottomNav';
 import {parseCookies} from "nookies";
+import DataTableRCkakra from "../../Components/Table";
 
 type UserType = {
     uid: string;
@@ -151,15 +152,86 @@ export default function UsersPage({data}: any) {
                 return 'Sem regra';
         }
     }
+    const columns = useMemo(
+        () => [
+            {
+                Header: 'Nome',
+                accessor: 'name',
+            },
+            {
+                Header: 'Email',
+                accessor: 'email',
+            },
+            {
+                Header: 'Permissão',
+                accessor: 'role',
+                isNumeric: true,
+            },
+            {
+                Header: 'Dt. Criação',
+                accessor: 'date',
+            },
+            {
+                Header: 'Editar',
+                accessor: 'edit',
+            }
+        ],
+        [],
+    )
+
+    function editUserFromData(user: UserType) {
+        return (<IconButton
+            ml={4}
+            size='md'
+            colorScheme='blue'
+            variant='outline'
+            aria-label='Editar cadastro'
+            icon={<EditIcon/>}
+            onClick={() => {
+                updateUserModal(user)
+            }}
+        />)
+    }
+
+    function editNameFromData(user: UserType) {
+        return ( <Box display={'flex'} flexDirection={'row'} alignItems={'center'}>
+            <Avatar
+                name={user.displayName}
+                src={user.photoURL}
+                size={'sm'}
+            />
+            <Text ml={4}>
+                {user.displayName}
+            </Text>
+        </Box>)
+    }
+
+    function getUsersFromData() {
+        const arrData: { name: object; email: string; role: string; date: string; edit: object; }[] = []
+        users.map(user => {
+            arrData.push({
+                name: editNameFromData(user),
+                email: user.email,
+                role: roles(user.role),
+                date: user.createdAt,
+                edit: editUserFromData(user)
+            })
+        })
+        return arrData
+    }
+
+    const dataTable = useMemo(
+        () => getUsersFromData(), [user],
+    )
+
 
     return (
         <Fragment>
             <NavBar/>
             <Container minH={'calc(100vh - 142px)'} maxW='container.xl' py={10}>
-                <Heading  color={'gray.600'}>
+                <Heading color={'gray.600'}>
                     Usuários
                 </Heading>
-
                 {users.length === 0 && (
                     <Box py={10}>
                         <Text>
@@ -167,99 +239,10 @@ export default function UsersPage({data}: any) {
                         </Text>
                     </Box>
                 )}
-
                 {users.length > 0 && (
-                    <Flex py={10}>
-                        <Table variant={'striped'} colorScheme={'gray'}>
-                            <TableCaption>Lista de usuários do sistema</TableCaption>
-                            <Thead>
-                                <Tr>
-                                    <Th>Nome</Th>
-                                    <Th>Email</Th>
-                                    <Th>Permissão</Th>
-                                    <Th>Dt. Criação</Th>
-                                    <Th></Th>
-                                </Tr>
-                            </Thead>
-                            <Tbody>
-                                {users.map((item) => {
-                                    return (
-                                        <Tr key={item.uid}>
-                                            <Td>
-                                                <Box display={'flex'} flexDirection={'row'} alignItems={'center'}>
-                                                    <Avatar
-                                                        name={item.displayName}
-                                                        src={item.photoURL}
-                                                        size={'sm'}
-                                                    />
-                                                    <Text ml={4}>
-                                                        {item.displayName}
-                                                    </Text>
-                                                </Box>
-                                            </Td>
-                                            <Td>
-                                                <Text>
-                                                    {item.email}
-                                                </Text>
-                                            </Td>
-                                            <Td>
-                                                <Text>
-                                                    {roles(item.role)}
-                                                </Text>
-                                            </Td>
-                                            <Td>
-                                                <Text>
-                                                    {item.createdAt}
-                                                </Text>
-                                            </Td>
-                                            <Td>
-                                                <IconButton
-                                                    ml={4}
-                                                    size='md'
-                                                    colorScheme='blue'
-                                                    variant='outline'
-                                                    aria-label='Editar cadastro'
-                                                    icon={<EditIcon/>}
-                                                    onClick={() => {
-                                                        updateUserModal(item)
-                                                    }}
-                                                />
-                                            </Td>
-                                        </Tr>
-                                    )
-                                })}
-                            </Tbody>
-                        </Table>
-                        {/* {users.map((item)=> {
-                        return (
-                                <Box
-                                    key={item.uid}>
-                                        <Avatar
-                                            name={item.displayName}
-                                            src={item.photoURL}
-                                            size={'sm'}
-                                        />
-                                        <Stack direction={'row'}>
-                                            <Text>{ item.displayName }</Text>
-                                            <Text>{ item.email }</Text>
-                                            <Text>{ item.role }</Text>
-                                            <Text>{ item.createdAt }</Text>
-
-                                            <IconButton
-                                                ml={4}
-                                                size='md'
-                                                colorScheme='blue'
-                                                variant='outline'
-                                                aria-label='Editar cadastro'
-                                                icon={<EditIcon />}
-                                                onClick={()=>{updateUserModal(item)}}
-                                            />
-                                    </Stack>
-
-                                </Box>
-                            )
-                    })} */}
-                    </Flex>
+                    <Box py={30}>
+                        <DataTableRCkakra columns={columns} data={getUsersFromData()}/>
+                    </Box>
                 )}
             </Container>
             <BottomNav/>
