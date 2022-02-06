@@ -8,7 +8,7 @@ import {Box, Container, Heading} from "@chakra-ui/react";
 import React from "react";
 
 const AvocadoHome: NextPage = () => {
-  
+
     const { isAuthenticated, role } = useAuth();
 
     return (
@@ -25,6 +25,7 @@ const AvocadoHome: NextPage = () => {
                 isAuthenticated: {isAuthenticated}<br/>
                 perfil: {role}
                 </Box>
+
             </Container>
           <BottomNav />
         </>
