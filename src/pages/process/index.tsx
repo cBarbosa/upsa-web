@@ -3,7 +3,10 @@ import {
     Button,
     Container,
     Flex,
+    FormControl,
+    FormLabel,
     Heading,
+    Input,
     Modal,
     ModalBody,
     ModalCloseButton,
@@ -12,6 +15,7 @@ import {
     ModalHeader,
     ModalOverlay,
     Text,
+    Textarea,
     useDisclosure
 } from '@chakra-ui/react';
 import {collection, getDocs, query, where} from 'firebase/firestore';
@@ -23,6 +27,7 @@ import NavBar from '../../Components/NavBar';
 import {useAuth} from '../../Contexts/AuthContext';
 import {db} from '../../services/firebase';
 import {parseCookies} from "nookies";
+import InputMask from 'react-input-mask';
 
 type ProcessType = {
     uid: string;
@@ -49,6 +54,7 @@ const ProcessListPage: NextPage = () => {
     const {user, role, login} = useAuth();
     const {isOpen, onOpen, onClose} = useDisclosure();
     const [process, setProcess] = useState<ProcessType[]>([]);
+    const [prazo, setPrazo] = useState<Date>(new Date());
 
     useEffect(() => {
         getProcess();
@@ -129,6 +135,54 @@ const ProcessListPage: NextPage = () => {
                     <ModalHeader>Dados do processo</ModalHeader>
                     <ModalCloseButton/>
                     <ModalBody pb={6}>
+
+                        <FormControl>
+                            <FormLabel>Numero do processo</FormLabel>
+                            <InputMask
+                                mask='9999999-99.9999.9.99.9999'
+                                placeholder='Process number'
+                            />
+                        </FormControl>
+
+                        <FormControl>
+                            <FormLabel>Autor do processo</FormLabel>
+                            <Input
+                                placeholder='Author'
+                                variant={'filled'}
+                            />
+                        </FormControl>
+
+                        <FormControl>
+                            <FormLabel>Réu do processo</FormLabel>
+                            <Input
+                                placeholder='Réu'
+                                variant={'filled'}
+                            />
+                        </FormControl>
+
+                        <FormControl>
+                            <FormLabel>Decisão do processo</FormLabel>
+                            <Textarea
+                                placeholder='Decision'
+                                variant={'filled'}
+                            />
+                        </FormControl>
+
+                        <FormControl>
+                            <FormLabel>Dias de prazo</FormLabel>
+                            <Input
+                                placeholder='Dias de prazo'
+                                variant={'filled'}
+                                type={'number'}
+                                maxLength={3}
+                                onChange={(event) => setPrazo(event.target.value != '' ? new Date(new Date().setDate(new Date().getDate() + parseInt(event.target.value))) : new Date()) }
+                            />
+                            {prazo.toLocaleDateString('pt-BR', {
+                                day: '2-digit',
+                                month: 'long',
+                                year: 'numeric'
+                            })}
+                        </FormControl>
 
                     </ModalBody>
 
