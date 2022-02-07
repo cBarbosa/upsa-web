@@ -43,7 +43,7 @@ function DataTable({columns, data}: any) {
     } = useTable({columns, data, initialState: {pageIndex: 0},}, usePagination)
 
     return (
-        <Fragment>
+        <>
             <Table variant={'striped'} colorScheme={'blue'} {...getTableProps()}>
                 <Thead>
                     {headerGroups.map((headerGroup: any) => (
@@ -136,7 +136,7 @@ function DataTable({columns, data}: any) {
                     </GridItem>
                 </Grid>
             </Box>
-        </Fragment>
+        </>
     )
 }
 

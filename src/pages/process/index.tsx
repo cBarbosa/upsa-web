@@ -68,6 +68,7 @@ const ProcessListPage: NextPage = () => {
     const proccessCollection = collection(database, 'proccess');
     const {user, role, login} = useAuth();
     const {isOpen, onOpen, onClose} = useDisclosure();
+    const {isOpen: isOpenEdit, onOpen: onOpenEdit, onClose: onCloseEdit} = useDisclosure();
     const toast = useToast();
     const [process, setProcess] = useState<ProcessType[]>([]);
     const [prazo, setPrazo] = useState<Date>(new Date());
@@ -110,7 +111,8 @@ const ProcessListPage: NextPage = () => {
 
     const _handleNewProcess = async () => {
 
-        const snapProcess =  await getDocs(query(proccessCollection, where('number', '==', processNumber)));
+        const snapProcess =  await getDocs(query(proccessCollection,
+                                where('number', '==', processNumber)));
 
         if(!snapProcess.empty) {
             toast({
@@ -159,32 +161,33 @@ const ProcessListPage: NextPage = () => {
     };
 
     const _handleEditProcess = async (item: ProcessType) => {
-        setEditProcess(item);
-        onOpen();
+        setEditProcess({...item, ['updated_at']:new Date()});
+        onOpenEdit();
     };
     
     const _handleUpdateProcess = async () => {
 
-        try {
-            const _process = doc(db, `users/${editProcess?.uid}`);
+console.debug('editProcess', editProcess);
+        // try {
+        //     const _process = doc(db, `users/${editProcess?.uid}`);
 
-            await updateDoc(_process, editProcess);
+        //     await updateDoc(_process, editProcess);
 
-            getProcess();
+        //     getProcess();
 
-            toast({
-                title: 'Processo',
-                description: "Processo alterado com sucesso",
-                status: 'success',
-                duration: 9000,
-                isClosable: true,
-            });
+        //     toast({
+        //         title: 'Processo',
+        //         description: "Processo alterado com sucesso",
+        //         status: 'success',
+        //         duration: 9000,
+        //         isClosable: true,
+        //     });
 
-            setEditProcess(null);
+        //     setEditProcess(null);
 
-        } catch (error) {
-            console.log(error);
-        }
+        // } catch (error) {
+        //     console.log(error);
+        // }
 
         onClose();
     };
@@ -222,7 +225,7 @@ const ProcessListPage: NextPage = () => {
                 number: proc.number,
                 author: proc.author,
                 defendant: proc.defendant,
-                created_at: proc.created_at.toDate().toLocaleDateString('pt-BR', {
+                created_at: new Date(proc.created_at).toLocaleDateString('pt-BR', {
                     day: '2-digit',
                     month: 'long',
                     year: 'numeric'
@@ -290,7 +293,7 @@ const ProcessListPage: NextPage = () => {
             >
                 <ModalOverlay/>
                 <ModalContent>
-                    <ModalHeader>Dados do processo</ModalHeader>
+                    <ModalHeader>Dados do processo (Novo)</ModalHeader>
                     <ModalCloseButton/>
                     <ModalBody pb={6}>
 
@@ -303,7 +306,7 @@ const ProcessListPage: NextPage = () => {
                                 placeholder='Process number'
                                 isRequired={true}
                                 onChange={event => setProcessNumber(event.target.value)}
-                                value={editProcess?.number}
+                                value={processNumber}
                             />
                         </FormControl>
 
@@ -313,7 +316,7 @@ const ProcessListPage: NextPage = () => {
                                 placeholder='Author'
                                 variant={'filled'}
                                 onChange={event => setProcessAuthor(event.target.value)}
-                                value={editProcess?.author}
+                                value={processAuthor}
                             />
                         </FormControl>
 
@@ -323,7 +326,7 @@ const ProcessListPage: NextPage = () => {
                                 placeholder='Réu'
                                 variant={'filled'}
                                 onChange={event => setProcessDefendant(event.target.value)}
-                                value={editProcess?.defendant}
+                                value={processDefendant}
                             />
                         </FormControl>
 
@@ -333,11 +336,11 @@ const ProcessListPage: NextPage = () => {
                                 placeholder='Decision'
                                 variant={'filled'}
                                 onChange={event => setProcessDecision(event.target.value)}
-                                value={editProcess?.decision}
+                                value={processDecision}
                             />
                         </FormControl>
 
-                        {editProcess?.deadline.find(x=>x.deadline_interpreter == user?.uid) && (
+                        {user?.role=='analyst' && (
                             <FormControl>
                                 <FormLabel>Dias de prazo</FormLabel>
                                 <Input
@@ -348,27 +351,7 @@ const ProcessListPage: NextPage = () => {
                                     onChange={(event) => {setPrazo(event.target.value != ''
                                         ? new Date(new Date().setDate(new Date().getDate() + parseInt(event.target.value)))
                                         : new Date()); setProcessDays(parseInt(event.target.value)); }}
-                                    value={ editProcess?.deadline.find(x=>x.deadline_interpreter == user?.uid)?.deadline_days }
-                                />
-                                {processDays > 0 && `Prazo calculado: ${prazo.toLocaleDateString('pt-BR', {
-                                    day: '2-digit',
-                                    month: 'long',
-                                    year: 'numeric'
-                                })}`}
-                            </FormControl>
-                        )}
-
-                        {editProcess == null && (
-                            <FormControl>
-                                <FormLabel>Dias de prazo</FormLabel>
-                                <Input
-                                    placeholder='Dias de prazo'
-                                    variant={'filled'}
-                                    type={'number'}
-                                    maxLength={3}
-                                    onChange={(event) => {setPrazo(event.target.value != ''
-                                        ? new Date(new Date().setDate(new Date().getDate() + parseInt(event.target.value)))
-                                        : new Date()); setProcessDays(parseInt(event.target.value)); }}
+                                    value={processDays}
                                 />
                                 {processDays > 0 && `Prazo calculado: ${prazo.toLocaleDateString('pt-BR', {
                                     day: '2-digit',
@@ -384,7 +367,7 @@ const ProcessListPage: NextPage = () => {
                         <Button
                             colorScheme='blue'
                             mr={3}
-                            onClick={event => { editProcess == null ? _handleNewProcess() : _handleUpdateProcess() }}
+                            onClick={event => _handleNewProcess()}
                         >
                             Salvar
                         </Button>
@@ -401,6 +384,104 @@ const ProcessListPage: NextPage = () => {
                     </ModalFooter>
                 </ModalContent>
             </Modal>
+
+            <Modal
+                isOpen={isOpenEdit}
+                onClose={onCloseEdit}
+                closeOnOverlayClick={false}
+            >
+                <ModalOverlay/>
+                <ModalContent>
+                    <ModalHeader>Dados do processo (Atualização)</ModalHeader>
+                    <ModalCloseButton/>
+                    <ModalBody pb={6}>
+
+                        <FormControl>
+                            <FormLabel>Numero do processo</FormLabel>
+                            <Input
+                                as={InputMask}
+                                variant={'filled'}
+                                mask='9999999-99.9999.9.99.9999'
+                                placeholder='Process number'
+                                isRequired={true}
+                                // onChange={event => setProcessNumber(event.target.value)}
+                                value={editProcess?.number}
+                            />
+                        </FormControl>
+
+                        <FormControl>
+                            <FormLabel>Autor do processo</FormLabel>
+                            <Input
+                                placeholder='Author'
+                                variant={'filled'}
+                                onChange={event => setEditProcess(editProcess != null ? {...editProcess, ['author']:event.target.value} : null)}
+                                value={editProcess?.author}
+                            />
+                        </FormControl>
+
+                        <FormControl>
+                            <FormLabel>Réu do processo</FormLabel>
+                            <Input
+                                placeholder='Réu'
+                                variant={'filled'}
+                                onChange={event => setEditProcess(editProcess != null ? {...editProcess, ['defendant']:event.target.value} : null)}
+                                value={editProcess?.defendant}
+                            />
+                        </FormControl>
+
+                        <FormControl>
+                            <FormLabel>Decisão do processo</FormLabel>
+                            <Textarea
+                                placeholder='Decision'
+                                variant={'filled'}
+                                onChange={event => setEditProcess(editProcess != null ? {...editProcess, ['decision']:event.target.value} : null)}
+                                value={editProcess?.decision}
+                            />
+                        </FormControl>
+
+                        {editProcess?.deadline.find(x=>x.deadline_interpreter == user?.uid) && (
+                            <FormControl>
+                                <FormLabel>Dias de prazo</FormLabel>
+                                {/* <Input
+                                    placeholder='Dias de prazo'
+                                    variant={'filled'}
+                                    type={'number'}
+                                    maxLength={3}
+                                    onChange={event => setEditProcess(editProcess != null
+                                        ? {...editProcess, ['deadline']:event.target.value}
+                                        : null)}
+                                    value={ editProcess?.deadline.find(x=>x.deadline_interpreter == user?.uid)?.deadline_days }
+                                /> */}
+                                {
+                                (`Prazo calculado: ${editProcess?.deadline.find(x=>x.deadline_interpreter == user?.uid)?.deadline_date}`)
+                                }
+                            </FormControl>
+                        )}
+
+                    </ModalBody>
+
+                    <ModalFooter>
+                        <Button
+                            colorScheme='blue'
+                            mr={3}
+                            onClick={event => _handleUpdateProcess()}
+                        >
+                            Salvar
+                        </Button>
+                        <Button
+                            colorScheme='red'
+                            mr={3}
+                            hidden={true}
+                        >
+                            Deletar
+                        </Button>
+                        <Button onClick={onCloseEdit}>
+                            Cancelar
+                        </Button>
+                    </ModalFooter>
+                </ModalContent>
+            </Modal>
+
         </Fragment>
     )
 }
