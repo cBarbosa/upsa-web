@@ -1,4 +1,4 @@
-import {collection, doc, getDocs, query, updateDoc, where} from 'firebase/firestore';
+import {collection, doc, getDocs, orderBy, query, updateDoc, where} from 'firebase/firestore';
 import React, {Fragment, useMemo} from 'react';
 import {useEffect, useState} from 'react';
 import {useAuth} from '../../Contexts/AuthContext';
@@ -7,7 +7,6 @@ import {
     Text,
     Box,
     Button,
-    Flex,
     FormControl,
     FormLabel,
     Heading,
@@ -17,14 +16,6 @@ import {
     useDisclosure,
     Stack,
     IconButton,
-    Table,
-    TableCaption,
-    Thead,
-    Tr,
-    Th,
-    Tbody,
-    Td,
-    Tfoot,
     Container
 } from '@chakra-ui/react';
 import {EditIcon} from '@chakra-ui/icons';
@@ -46,20 +37,6 @@ type UserType = {
     createdAt: string;
 };
 
-// const cityConverter = {
-//     toFirestore: (city) => {
-//         return {
-//             name: city.name,
-//             state: city.state,
-//             country: city.country
-//             };
-//     },
-//     fromFirestore: (snapshot, options) => {
-//         const data = snapshot.data(options);
-//         return new City(data.name, data.state, data.country);
-//     }
-// };
-
 export default function UsersPage({data}: any) {
     const database = db;
     const usersCollection = collection(database, 'users');
@@ -71,18 +48,12 @@ export default function UsersPage({data}: any) {
     const [editUser, setEditUser] = useState<UserType | null>(null);
     const [editProfile, setEditProfile] = useState<string>('none');
 
-    // useEffect( () => {
-    //     if (role != '' && role != 'admin') {
-    //         router.push('/');
-    //     }
-    //  },[role]);
-
     useEffect(() => {
         getUsers();
     }, []);
 
     const getUsers = async () => {
-        const usersQuery = query(usersCollection, where('role', '!=', 'admin'));
+        const usersQuery = query(usersCollection, orderBy('displayName'));
         const querySnapshot = await getDocs(usersQuery);
 
         // const result: QueryDocumentSnapshot<DocumentData>[] = [];
@@ -151,7 +122,8 @@ export default function UsersPage({data}: any) {
             default:
                 return 'Sem regra';
         }
-    }
+    };
+
     const columns = useMemo(
         () => [
             {
@@ -177,7 +149,7 @@ export default function UsersPage({data}: any) {
             }
         ],
         [],
-    )
+    );
 
     function editUserFromData(user: UserType) {
         return (<IconButton
@@ -222,8 +194,7 @@ export default function UsersPage({data}: any) {
 
     const dataTable = useMemo(
         () => getUsersFromData(), [user],
-    )
-
+    );
 
     return (
         <Fragment>
@@ -371,7 +342,10 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
     // };
 
     const {['upsa.role']: upsaRole} = parseCookies(ctx);
-    const acceptedRules = ['admin']
+    const acceptedRules = ['admin'];
+
+    console.log(upsaRole);
+
     if (!acceptedRules.includes(upsaRole)) {
         return {
             redirect: {
