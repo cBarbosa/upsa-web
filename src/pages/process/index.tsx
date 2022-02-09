@@ -136,17 +136,19 @@ const ProcessListPage: NextPage = () => {
 
         const docRef = await addDoc(proccessCollection, dataProcess);
 
-        const dataProcessNode1 = {
-            deadline_days: processDays,
-            deadline_date: prazo,
-            deadline_interpreter: user?.uid,
-            checked: false,
-            created_at: new Date()
-        };
-
-        await updateDoc(docRef, {
-            deadline: arrayUnion(dataProcessNode1)
-        });
+        if(role === 'analyst') {
+            const dataProcessNode1 = {
+                deadline_days: processDays,
+                deadline_date: prazo,
+                deadline_interpreter: user?.uid,
+                checked: false,
+                created_at: new Date()
+            };
+    
+            await updateDoc(docRef, {
+                deadline: arrayUnion(dataProcessNode1)
+            });
+        }
 
         toast({
             title: 'Processo',
@@ -219,17 +221,22 @@ console.debug('editProcess', editProcess);
     );
 
     function getProcessFromData() {
-        const arrData: { number: string; author: string; defendant: string; created_at: string; edit: object; }[] = []
+        const arrData: { number: string; author: string; defendant: string; created_at: string; edit: object; }[] = [];
+        
+        console.debug('array', arrData);
+
         process.map(proc => {
             arrData.push({
                 number: proc.number,
                 author: proc.author,
                 defendant: proc.defendant,
-                created_at: new Date(proc.created_at as Date).toLocaleDateString('pt-BR', {
-                    day: '2-digit',
-                    month: 'long',
-                    year: 'numeric'
-                }),
+                // created_at: proc.created_at.toLocaleDateString('pt-BR', {
+                //     day: '2-digit',
+                //     month: 'long',
+                //     year: 'numeric'
+                // }),
+                // created_at: new Date().toLocaleDateString('pt-BR'),
+                created_at: '',
                 edit: editProcessFromData(proc)
             })
         })
@@ -238,16 +245,16 @@ console.debug('editProcess', editProcess);
 
     function editProcessFromData(proc: ProcessType) {
         return (<IconButton
-            ml={4}
-            size='md'
-            colorScheme='blue'
-            variant='outline'
-            aria-label='Editar processo'
-            icon={<EditIcon/>}
-            onClick={() => {
-                _handleEditProcess(proc)
-            }}
-        />)
+                ml={4}
+                size='md'
+                colorScheme='blue'
+                variant='outline'
+                aria-label='Editar processo'
+                icon={<EditIcon/>}
+                onClick={() => {
+                    _handleEditProcess(proc)
+                }}
+            />);
     }
 
     const dataTable = useMemo(
@@ -340,7 +347,7 @@ console.debug('editProcess', editProcess);
                             />
                         </FormControl>
 
-                        {user?.role=='analyst' && (
+                        {role==='analyst' && (
                             <FormControl>
                                 <FormLabel>Dias de prazo</FormLabel>
                                 <Input
@@ -360,7 +367,6 @@ console.debug('editProcess', editProcess);
                                 })}`}
                             </FormControl>
                         )}
-
                     </ModalBody>
 
                     <ModalFooter>
