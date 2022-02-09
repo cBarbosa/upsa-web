@@ -225,7 +225,7 @@ console.debug('editProcess', editProcess);
                 number: proc.number,
                 author: proc.author,
                 defendant: proc.defendant,
-                created_at: new Date(proc.created_at).toLocaleDateString('pt-BR', {
+                created_at: new Date(proc.created_at as Date).toLocaleDateString('pt-BR', {
                     day: '2-digit',
                     month: 'long',
                     year: 'numeric'
