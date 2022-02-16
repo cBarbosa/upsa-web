@@ -27,8 +27,10 @@ import {
     collection,
     doc,
     getDocs,
+    orderBy,
     query,
     setDoc,
+    Timestamp,
     updateDoc,
     where
 } from 'firebase/firestore';
@@ -226,17 +228,16 @@ console.debug('editProcess', editProcess);
         console.debug('array', arrData);
 
         process.map(proc => {
+
+// console.debug('debug', (proc.created_at as Timestamp).toDate().toDateString());
+
             arrData.push({
                 number: proc.number,
                 author: proc.author,
                 defendant: proc.defendant,
-                // created_at: proc.created_at.toLocaleDateString('pt-BR', {
-                //     day: '2-digit',
-                //     month: 'long',
-                //     year: 'numeric'
-                // }),
+                created_at: (proc.created_at as Timestamp).toDate().toLocaleDateString('pt-BR'),
                 // created_at: new Date().toLocaleDateString('pt-BR'),
-                created_at: '',
+                // created_at: new Date(proc.created_at).toDateString(),
                 edit: editProcessFromData(proc)
             })
         })
@@ -464,6 +465,20 @@ console.debug('editProcess', editProcess);
                             </FormControl>
                         )}
 
+                        {role==='analyst' && (
+                            editProcess?.deadline.map((process, index) => {
+                                return(
+                                    <p
+                                        key={index}
+                                    >
+                                        {/* <span>{process.created_at}</span> */}
+                                        <span>{process.deadline_days}</span>
+                                        <span>{(process.deadline_date as Date)}</span>
+                                    </p>
+                                )
+                            })
+                        )}
+
                     </ModalBody>
 
                     <ModalFooter>
@@ -482,7 +497,7 @@ console.debug('editProcess', editProcess);
                             Deletar
                         </Button>
                         <Button onClick={onCloseEdit}>
-                            Cancelar
+                            Fechar
                         </Button>
                     </ModalFooter>
                 </ModalContent>
