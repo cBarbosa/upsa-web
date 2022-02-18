@@ -23,6 +23,7 @@ import {
 import { EditIcon } from '@chakra-ui/icons';
 import {
     addDoc,
+    arrayRemove,
     arrayUnion,
     collection,
     doc,
@@ -52,17 +53,18 @@ type ProcessType = {
     defendant: string;
     decision: string;
     accountable: string;
-    deadline: 
-        {
-            deadline_days: number;
-            deadline_date: Date;
-            deadline_interpreter: string;
-            checked: boolean;
-            created_at: Date;
-        }[];
+    deadline: DeadLineProcessType[];
     active: boolean;
-    created_at: Date;
-    updated_at: Date;
+    created_at: Timestamp;
+    updated_at: Timestamp;
+};
+
+type DeadLineProcessType = {
+    deadline_days: number;
+    deadline_date: Timestamp;
+    deadline_interpreter: string;
+    checked: boolean;
+    created_at: Timestamp;
 };
 
 const ProcessListPage: NextPage = () => {
@@ -80,6 +82,8 @@ const ProcessListPage: NextPage = () => {
     const [processDecision, setProcessDecision] = useState('');
     const [processDays, setProcessDays] = useState(0);
     const [editProcess, setEditProcess] = useState<ProcessType | null>(null);
+    const [deadLineProcess, setDeadLineProcess] = useState<DeadLineProcessType | null>(null);
+    
 
     useEffect(() => {
         getProcess();
@@ -133,23 +137,36 @@ const ProcessListPage: NextPage = () => {
             defendant: processDefendant,
             decision: processDecision,
             active: true,
-            created_at: new Date()
+            created_at: Timestamp.now()
         } as ProcessType;
 
         const docRef = await addDoc(proccessCollection, dataProcess);
 
         if(role === 'analyst') {
+
+            if(processDays < 1) {
+                toast({
+                    title: 'Processo',
+                    description: "É necessário informar o prazo",
+                    status: 'error',
+                    duration: 9000,
+                    isClosable: true,
+                });
+                return;
+            }
+
             const dataProcessNode1 = {
                 deadline_days: processDays,
                 deadline_date: prazo,
                 deadline_interpreter: user?.uid,
                 checked: false,
-                created_at: new Date()
+                created_at: Timestamp.now()
             };
     
             await updateDoc(docRef, {
                 deadline: arrayUnion(dataProcessNode1)
             });
+            cleanVariables();
         }
 
         toast({
@@ -160,40 +177,89 @@ const ProcessListPage: NextPage = () => {
             isClosable: true,
         });
 
-        getProcess();
+        await getProcess();
+        cleanVariables();
         onClose();
     };
 
     const _handleEditProcess = async (item: ProcessType) => {
-        setEditProcess({...item, ['updated_at']:new Date()});
+        setEditProcess({...item, ['updated_at']: Timestamp.now() });
+        if(role ==='analyst') {
+            setDeadLineProcess(item.deadline?.find(x=>x.deadline_interpreter == user?.uid) ?? null);
+            setPrazo(item.deadline?.find(x=>x.deadline_interpreter == user?.uid)?.deadline_date.toDate() ?? new Date())
+            setProcessDays(item.deadline?.find(x=>x.deadline_interpreter == user?.uid)?.deadline_days ?? 0);
+        }
         onOpenEdit();
     };
     
     const _handleUpdateProcess = async () => {
 
-console.debug('editProcess', editProcess);
-        // try {
-        //     const _process = doc(db, `users/${editProcess?.uid}`);
+        if(role ==='analyst' && (processDays < 1 || prazo < new Date())) {
+            toast({
+                title: 'Processo',
+                description: 'Prazo deve contemplar uma data maior que a atual',
+                status: 'error',
+                duration: 9000,
+                isClosable: true,
+            });
+            return;
+        }
 
-        //     await updateDoc(_process, editProcess);
+        try {
+            const _processRef = doc(db, `proccess/${editProcess?.uid}`);
 
-        //     getProcess();
+            const result = await updateDoc(_processRef, {
+                author: editProcess?.author,
+                defendant: editProcess?.defendant,
+                decision: editProcess?.decision,
+                updated_at: editProcess?.updated_at
+            });
 
-        //     toast({
-        //         title: 'Processo',
-        //         description: "Processo alterado com sucesso",
-        //         status: 'success',
-        //         duration: 9000,
-        //         isClosable: true,
-        //     });
+            if(role === 'analyst' && processDays > 0) {
+                const dataProcessNode1 = {
+                    deadline_days: processDays,
+                    deadline_date: prazo,
+                    deadline_interpreter: user?.uid,
+                    checked: false,
+                    created_at: Timestamp.now()
+                };
 
-        //     setEditProcess(null);
+                if(editProcess?.deadline?.find(x=>x.deadline_interpreter == user?.uid))
+                {
+                    await updateDoc(_processRef, {
+                        deadline: arrayRemove(editProcess?.deadline?.find(x=>x.deadline_interpreter == user?.uid))
+                    });
+                }
+        
+                await updateDoc(_processRef, {
+                    deadline: arrayUnion(dataProcessNode1)
+                });
+            }
 
-        // } catch (error) {
-        //     console.log(error);
-        // }
+            await getProcess();
 
-        onClose();
+            toast({
+                title: 'Processo',
+                description: "Processo alterado com sucesso",
+                status: 'success',
+                duration: 9000,
+                isClosable: true,
+            });
+
+        } catch (error) {
+            console.log(error);
+
+            toast({
+                title: 'Processo',
+                description: 'Erro atualizando o processo',
+                status: 'error',
+                duration: 9000,
+                isClosable: true,
+            });
+        }
+
+        cleanVariables();
+        onCloseEdit();
     };
 
     const columns = useMemo(
@@ -223,25 +289,30 @@ console.debug('editProcess', editProcess);
     );
 
     function getProcessFromData() {
-        const arrData: { number: string; author: string; defendant: string; created_at: string; edit: object; }[] = [];
-        
-        console.debug('array', arrData);
+        const arrData: {
+            number: string;
+            author: string;
+            defendant: string;
+            created_at: string;
+            edit: object;
+        }[] = [];
 
         process.map(proc => {
-
-// console.debug('debug', (proc.created_at as Timestamp).toDate().toDateString());
-
             arrData.push({
                 number: proc.number,
                 author: proc.author,
                 defendant: proc.defendant,
-                created_at: (proc.created_at as Timestamp).toDate().toLocaleDateString('pt-BR'),
-                // created_at: new Date().toLocaleDateString('pt-BR'),
-                // created_at: new Date(proc.created_at).toDateString(),
+                created_at: proc.created_at.toDate().toLocaleDateString('pt-BR', {
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                }),
                 edit: editProcessFromData(proc)
-            })
-        })
-        return arrData
+            });
+        });
+        return arrData;
     }
 
     function editProcessFromData(proc: ProcessType) {
@@ -256,6 +327,13 @@ console.debug('editProcess', editProcess);
                     _handleEditProcess(proc)
                 }}
             />);
+    }
+
+    function cleanVariables() {
+        setEditProcess(null);
+        setProcessDays(0);
+        setPrazo(new Date());
+        setDeadLineProcess(null);
     }
 
     const dataTable = useMemo(
@@ -396,6 +474,7 @@ console.debug('editProcess', editProcess);
                 isOpen={isOpenEdit}
                 onClose={onCloseEdit}
                 closeOnOverlayClick={false}
+                size={'full'}
             >
                 <ModalOverlay/>
                 <ModalContent>
@@ -413,6 +492,7 @@ console.debug('editProcess', editProcess);
                                 isRequired={true}
                                 // onChange={event => setProcessNumber(event.target.value)}
                                 value={editProcess?.number}
+                                readOnly={true}
                             />
                         </FormControl>
 
@@ -443,40 +523,118 @@ console.debug('editProcess', editProcess);
                                 variant={'filled'}
                                 onChange={event => setEditProcess(editProcess != null ? {...editProcess, ['decision']:event.target.value} : null)}
                                 value={editProcess?.decision}
+                                rows={10}
                             />
                         </FormControl>
 
-                        {editProcess?.deadline.find(x=>x.deadline_interpreter == user?.uid) && (
+                        {editProcess?.deadline?.find(x=>x.deadline_interpreter == user?.uid) && (
                             <FormControl>
                                 <FormLabel>Dias de prazo</FormLabel>
-                                {/* <Input
+                                <Input
                                     placeholder='Dias de prazo'
                                     variant={'filled'}
                                     type={'number'}
                                     maxLength={3}
-                                    onChange={event => setEditProcess(editProcess != null
-                                        ? {...editProcess, ['deadline']:event.target.value}
-                                        : null)}
-                                    value={ editProcess?.deadline.find(x=>x.deadline_interpreter == user?.uid)?.deadline_days }
-                                /> */}
+                                    onChange={(event) => {setPrazo(event.target.value != ''
+                                        ? new Date(new Date().setDate(editProcess?.created_at.toDate().getDate() + parseInt(event.target.value)))
+                                        : new Date()); setProcessDays(parseInt(event.target.value)); }}
+                                    value={processDays}
+                                />
                                 {
-                                (`Prazo calculado: ${editProcess?.deadline.find(x=>x.deadline_interpreter == user?.uid)?.deadline_date}`)
-                                }
+                                    (<Text
+                                        color={'green.900'}
+                                    >
+                                        Prazo calculado: {prazo?.toLocaleDateString('pt-BR', {
+                                            day: '2-digit',
+                                            month: 'long',
+                                            year: 'numeric'
+                                        })}
+                                    </Text>
+                                )}
                             </FormControl>
                         )}
 
-                        {role==='analyst' && (
-                            editProcess?.deadline.map((process, index) => {
+                        {role==='admin' && (
+                            editProcess?.deadline?.map((process, index) => {
                                 return(
-                                    <p
+                                    <Flex
                                         key={index}
+                                        alignContent={'center'}
                                     >
-                                        {/* <span>{process.created_at}</span> */}
-                                        <span>{process.deadline_days}</span>
-                                        <span>{(process.deadline_date as Date)}</span>
-                                    </p>
-                                )
+                                        <Text
+                                            
+                                        >
+                                            {process.deadline_days}
+                                        </Text>
+                                        <Text>
+                                            {process.deadline_date.toDate().toLocaleDateString('pt-BR', {
+                                                year: 'numeric',
+                                                month: '2-digit',
+                                                day: '2-digit',
+                                                hour: '2-digit',
+                                                minute: '2-digit'
+                                            })}
+                                        </Text>
+                                    </Flex>
+                                );
                             })
+                        )}
+
+                        {role === 'analyst'
+                            && (!editProcess?.deadline
+                            || editProcess?.deadline?.filter(x => x.deadline_interpreter == user?.uid).length == 0)
+                            && (
+                                <FormControl>
+                                    <FormLabel>Dias de prazo</FormLabel>
+                                    <Input
+                                        placeholder='Dias de prazo'
+                                        variant={'filled'}
+                                        type={'number'}
+                                        maxLength={3}
+                                        onChange={(event) => {setPrazo(event.target.value != ''
+                                            ? new Date(new Date().setDate((editProcess?.created_at.toDate() ?? new Date()).getDate() + parseInt(event.target.value)))
+                                            : new Date()); setProcessDays(parseInt(event.target.value)); }}
+                                        value={processDays}
+                                    />
+                                    {processDays > 0 && (
+                                        <Text
+                                            color={'green.900'}
+                                        >
+                                            Prazo calculado: {prazo.toLocaleDateString('pt-BR', {
+                                                day: '2-digit',
+                                                month: 'long',
+                                                year: 'numeric'
+                                            })}
+                                        </Text>)}
+                                </FormControl>
+                        )}
+
+                        <Text
+                            fontSize={'0.6rem'}
+                            fontWeight={'bold'}
+                        >
+                            Criado em: {editProcess?.created_at?.toDate().toLocaleDateString('pt-BR', {
+                                year: 'numeric',
+                                month: '2-digit',
+                                day: '2-digit',
+                                hour: '2-digit',
+                                minute: '2-digit'
+                            })}
+                        </Text>
+
+                        {editProcess?.updated_at && (
+                            <Text
+                                fontSize={'0.6rem'}
+                                fontWeight={'bold'}
+                            >
+                                Atualizado em: {editProcess?.updated_at?.toDate().toLocaleDateString('pt-BR', {
+                                    year: 'numeric',
+                                    month: '2-digit',
+                                    day: '2-digit',
+                                    hour: '2-digit',
+                                    minute: '2-digit'
+                                })}
+                            </Text>
                         )}
 
                     </ModalBody>
@@ -496,7 +654,7 @@ console.debug('editProcess', editProcess);
                         >
                             Deletar
                         </Button>
-                        <Button onClick={onCloseEdit}>
+                        <Button onClick={() => [onCloseEdit(), cleanVariables()]}>
                             Fechar
                         </Button>
                     </ModalFooter>
