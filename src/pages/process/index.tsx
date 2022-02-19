@@ -84,7 +84,6 @@ const ProcessListPage: NextPage = () => {
     const [editProcess, setEditProcess] = useState<ProcessType | null>(null);
     const [deadLineProcess, setDeadLineProcess] = useState<DeadLineProcessType | null>(null);
     
-
     useEffect(() => {
         getProcess();
     }, []);
@@ -666,7 +665,6 @@ const ProcessListPage: NextPage = () => {
 }
 
 export default ProcessListPage;
-
 
 export const getServerSideProps: GetServerSideProps = async (ctx) => {
     const {['upsa.role']: upsaRole} = parseCookies(ctx);
