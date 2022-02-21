@@ -1,4 +1,4 @@
-import {collection, doc, getDocs, orderBy, query, updateDoc, where} from 'firebase/firestore';
+import {collection, deleteDoc, doc, getDocs, orderBy, query, updateDoc, where} from 'firebase/firestore';
 import React, {Fragment, useMemo} from 'react';
 import {useEffect, useState} from 'react';
 import {useAuth} from '../../Contexts/AuthContext';
@@ -16,7 +16,8 @@ import {
     useDisclosure,
     Stack,
     IconButton,
-    Container
+    Container,
+    useToast
 } from '@chakra-ui/react';
 import {EditIcon} from '@chakra-ui/icons';
 import {Avatar} from '@chakra-ui/react';
@@ -40,7 +41,7 @@ type UserType = {
 export default function UsersPage({data}: any) {
     const database = db;
     const usersCollection = collection(database, 'users');
-
+    const toast = useToast();
     const {user, role, isAuthenticated} = useAuth();
     const {isOpen, onOpen, onClose} = useDisclosure();
     const router = useRouter();
@@ -56,7 +57,6 @@ export default function UsersPage({data}: any) {
         const usersQuery = query(usersCollection, orderBy('displayName'));
         const querySnapshot = await getDocs(usersQuery);
 
-        // const result: QueryDocumentSnapshot<DocumentData>[] = [];
         const result: UserType[] = [];
         querySnapshot.forEach((snapshot) => {
             result.push({
@@ -90,6 +90,14 @@ export default function UsersPage({data}: any) {
                 role: editProfile
             } as UserType);
 
+            toast({
+                title: 'Usuário',
+                description: "Usuário atualizado com sucesso",
+                status: 'success',
+                duration: 9000,
+                isClosable: true,
+            });
+
             getUsers();
         } catch (error) {
             console.log(error);
@@ -99,26 +107,38 @@ export default function UsersPage({data}: any) {
     };
 
     const _handleDeleteuser = async () => {
-        console.debug(editUser);
+        try {
+            const _user = doc(db, `users/${editUser?.uid}`);
+            await deleteDoc(_user);
+
+            toast({
+                title: 'Usuário',
+                description: "Usuário deletado com sucesso",
+                status: 'success',
+                duration: 9000,
+                isClosable: true,
+            });
+
+            getUsers();
+        } catch (error) {
+            console.log(error);
+        }
+
+        onClose();
     };
 
     const roles = (role: string) => {
         switch (role) {
             case 'avocado':
                 return 'Advogado'
-                break;
             case 'admin':
                 return 'Administrador'
-                break;
             case 'analyst':
                 return 'Analista'
-                break;
             case 'candidate':
                 return 'Candidato'
-                break;
             case 'none':
                 return 'Sem permissão'
-                break;
             default:
                 return 'Sem regra';
         }
@@ -254,7 +274,7 @@ export default function UsersPage({data}: any) {
                                 placeholder='Escolha o perfil'
                                 size={'md'}
                                 variant={'flushed'}
-                                value={editProfile}
+                                value={editUser?.role}
                                 onChange={(event) => setEditProfile(event.target.value)}
                             >
                                 <option value='none' selected={editUser?.role == 'none'}>Candidato</option>
@@ -342,7 +362,7 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
     // };
 
     const {['upsa.role']: upsaRole} = parseCookies(ctx);
-    const acceptedRules = ['admin'];
+    const acceptedRules = ['admin', 'avocado'];
 
     console.log(upsaRole);
 

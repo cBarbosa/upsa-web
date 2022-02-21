@@ -19,6 +19,8 @@ import {
     useDisclosure,
     useToast,
     IconButton,
+    Alert,
+    AlertIcon,
 } from '@chakra-ui/react';
 import { EditIcon } from '@chakra-ui/icons';
 import {
@@ -26,18 +28,22 @@ import {
     arrayRemove,
     arrayUnion,
     collection,
+    deleteDoc,
     doc,
     getDocs,
-    orderBy,
     query,
-    setDoc,
     Timestamp,
     updateDoc,
     where
 } from 'firebase/firestore';
-import type { GetServerSideProps, NextPage } from 'next';
+import { GetServerSideProps, NextPage } from 'next';
 import Head from 'next/head'
-import React, {Fragment, useEffect, useMemo, useState} from 'react';
+import React, {
+    Fragment,
+    useEffect,
+    useMemo,
+    useState
+} from 'react';
 import BottomNav from '../../Components/BottomNav';
 import NavBar from '../../Components/NavBar';
 import {useAuth} from '../../Contexts/AuthContext';
@@ -57,6 +63,7 @@ type ProcessType = {
     active: boolean;
     created_at: Timestamp;
     updated_at: Timestamp;
+    date_final: Timestamp;
 };
 
 type DeadLineProcessType = {
@@ -67,6 +74,16 @@ type DeadLineProcessType = {
     created_at: Timestamp;
 };
 
+type UserType = {
+    uid: string;
+    displayName: string;
+    email: string;
+    role: string;
+    photoURL?: string;
+    phoneNumber?: string;
+    createdAt: string;
+};
+
 const ProcessListPage: NextPage = () => {
     const database = db;
     const proccessCollection = collection(database, 'proccess');
@@ -75,6 +92,7 @@ const ProcessListPage: NextPage = () => {
     const {isOpen: isOpenEdit, onOpen: onOpenEdit, onClose: onCloseEdit} = useDisclosure();
     const toast = useToast();
     const [process, setProcess] = useState<ProcessType[]>([]);
+    const [analystList, setAnalystList] = useState<UserType[]>([]);
     const [prazo, setPrazo] = useState<Date>(new Date());
     const [processNumber, setProcessNumber] = useState('');
     const [processAuthor, setProcessAuthor] = useState('');
@@ -83,10 +101,12 @@ const ProcessListPage: NextPage = () => {
     const [processDays, setProcessDays] = useState(0);
     const [editProcess, setEditProcess] = useState<ProcessType | null>(null);
     const [deadLineProcess, setDeadLineProcess] = useState<DeadLineProcessType | null>(null);
-    
+    const [prazoDefinitivo, setPrazoDefinitivo] = useState<Date>(new Date());
+    const [processDaysFinal, setProcessDaysFinal] = useState(0);
 
     useEffect(() => {
         getProcess();
+        getAnalystList();
     }, []);
 
     const getProcess = async () => {
@@ -105,10 +125,30 @@ const ProcessListPage: NextPage = () => {
                 deadline: snapshot.data().deadline,
                 created_at: snapshot.data().created_at,
                 updated_at: snapshot.data().updated_at,
-                active: snapshot.data().active
+                active: snapshot.data().active,
+                date_final: snapshot.data().date_final
             } as ProcessType);
         });
         setProcess(result);
+    };
+
+    const getAnalystList = async () => {
+        const processQuery = query(collection(database, 'users'));
+        const querySnapshot = await getDocs(processQuery);
+
+        const result:UserType[] = [];
+        querySnapshot.forEach((snapshot) => {
+            result.push({
+                uid: snapshot.id,
+                displayName: snapshot.data().displayName,
+                email: snapshot.data().email,
+                role: snapshot.data().role,
+                photoURL: snapshot.data().photoURL,
+                phoneNumber: snapshot.data().phoneNumber,
+                createdAt: snapshot.data().createdAt
+            } as UserType);
+        });
+        setAnalystList(result);
     };
 
     const _handleAddProcess = async () => {
@@ -212,7 +252,9 @@ const ProcessListPage: NextPage = () => {
                 author: editProcess?.author,
                 defendant: editProcess?.defendant,
                 decision: editProcess?.decision,
-                updated_at: editProcess?.updated_at
+                updated_at: editProcess?.updated_at,
+                accountable: processDaysFinal > 0 ? user?.uid : null,
+                date_final: prazoDefinitivo ?? null
             });
 
             if(role === 'analyst' && processDays > 0) {
@@ -233,6 +275,23 @@ const ProcessListPage: NextPage = () => {
         
                 await updateDoc(_processRef, {
                     deadline: arrayUnion(dataProcessNode1)
+                });
+            }
+
+            if(role ==='avocado' && processDaysFinal > 0) {
+                const deadlines = editProcess?.deadline;
+
+                deadlines?.forEach(async element => {
+                    await updateDoc(_processRef, {
+                        deadline: arrayRemove(element)
+                    });
+
+                    await updateDoc(_processRef, {
+                        deadline: arrayUnion({...element,
+                            ['deadline_days']:processDaysFinal,
+                            ['deadline_date']:prazoDefinitivo,
+                            ['checked']:true})
+                    });
                 });
             }
 
@@ -261,6 +320,28 @@ const ProcessListPage: NextPage = () => {
         cleanVariables();
         onCloseEdit();
     };
+
+    const _handleDeleteProcess = async () => {
+        try {
+            const _processRef = doc(db, `proccess/${editProcess?.uid}`);
+            await deleteDoc(_processRef);
+
+            toast({
+                title: 'Processo',
+                description: "Processo deletado com sucesso",
+                status: 'success',
+                duration: 9000,
+                isClosable: true,
+            });
+
+            await getProcess();
+        } catch (error) {
+            console.log(error);
+        }
+
+        cleanVariables();
+        onCloseEdit();
+    }
 
     const columns = useMemo(
         () => [
@@ -334,6 +415,13 @@ const ProcessListPage: NextPage = () => {
         setProcessDays(0);
         setPrazo(new Date());
         setDeadLineProcess(null);
+        setPrazoDefinitivo(new Date());
+        setProcessDaysFinal(0);
+
+        setProcessNumber('');
+        setProcessAuthor('');
+        setProcessDefendant('');
+        setProcessDecision('');
     }
 
     const dataTable = useMemo(
@@ -481,6 +569,16 @@ const ProcessListPage: NextPage = () => {
                     <ModalHeader>Dados do processo (Atualização)</ModalHeader>
                     <ModalCloseButton/>
                     <ModalBody pb={6}>
+                        {/* Exibe a mensagem de inconsistência */}
+                        {(editProcess?.deadline !=null
+                            && editProcess?.deadline.length == 2
+                            && !editProcess?.deadline?.every((val, i, arr) => val.deadline_days === arr[0].deadline_days)
+                            ) && (
+                            <Alert status='error' variant='left-accent'>
+                                <AlertIcon />
+                                INCONSISTÊNCIA DE DATAS DIVERGENTES
+                            </Alert>
+                        )}
 
                         <FormControl>
                             <FormLabel>Numero do processo</FormLabel>
@@ -490,7 +588,6 @@ const ProcessListPage: NextPage = () => {
                                 mask='9999999-99.9999.9.99.9999'
                                 placeholder='Process number'
                                 isRequired={true}
-                                // onChange={event => setProcessNumber(event.target.value)}
                                 value={editProcess?.number}
                                 readOnly={true}
                             />
@@ -527,7 +624,8 @@ const ProcessListPage: NextPage = () => {
                             />
                         </FormControl>
 
-                        {editProcess?.deadline?.find(x=>x.deadline_interpreter == user?.uid) && (
+                        {/* Permite a edição do analista */}
+                        {editProcess?.deadline?.find(x=>x.deadline_interpreter == user?.uid) && (!editProcess?.date_final) && (
                             <FormControl>
                                 <FormLabel>Dias de prazo</FormLabel>
                                 <Input
@@ -554,32 +652,34 @@ const ProcessListPage: NextPage = () => {
                             </FormControl>
                         )}
 
-                        {role==='admin' && (
+                        {/* Lista as interpretações dos analistas */}
+                        {(role==='admin' || role =='avocado') && (
                             editProcess?.deadline?.map((process, index) => {
                                 return(
-                                    <Flex
-                                        key={index}
-                                        alignContent={'center'}
+                                    <Alert
+                                        status='info'
+                                        variant='left-accent'
+                                        pt={2} key={index}
                                     >
+                                        <AlertIcon />
+                                        {process.deadline_days} dias,
+                                        datado para {process.deadline_date.toDate().toLocaleDateString('pt-BR', {
+                                            year: 'numeric',
+                                            month: '2-digit',
+                                            day: '2-digit'
+                                        })}
+                                        , definido por &nbsp;
                                         <Text
-                                            
+                                            fontWeight={'bold'}
                                         >
-                                            {process.deadline_days}
+                                            {analystList.find(x => x.uid == process.deadline_interpreter)?.displayName}
                                         </Text>
-                                        <Text>
-                                            {process.deadline_date.toDate().toLocaleDateString('pt-BR', {
-                                                year: 'numeric',
-                                                month: '2-digit',
-                                                day: '2-digit',
-                                                hour: '2-digit',
-                                                minute: '2-digit'
-                                            })}
-                                        </Text>
-                                    </Flex>
+                                    </Alert>
                                 );
                             })
                         )}
 
+                        {/* Permite ao analista inserir uma data de interpreteção */}
                         {role === 'analyst'
                             && (!editProcess?.deadline
                             || editProcess?.deadline?.filter(x => x.deadline_interpreter == user?.uid).length == 0)
@@ -607,6 +707,61 @@ const ProcessListPage: NextPage = () => {
                                             })}
                                         </Text>)}
                                 </FormControl>
+                        )}
+
+                        {/* Permite ao advogado definir a data divergente que será respeitada */}
+                        {role === 'avocado'
+                            && (editProcess?.deadline?.length == 2)
+                            && (!editProcess?.deadline?.every((val, i, arr) => val.deadline_days === arr[0].deadline_days))
+                            && (
+                                <FormControl>
+                                    <FormLabel>Dias de prazo</FormLabel>
+                                    <Input
+                                        placeholder='Dias de prazo'
+                                        variant={'filled'}
+                                        type={'number'}
+                                        maxLength={3}
+                                        onChange={(event) => {setPrazoDefinitivo(event.target.value != ''
+                                            ? new Date(new Date().setDate((editProcess?.created_at.toDate() ?? new Date()).getDate() + parseInt(event.target.value)))
+                                            : new Date()); setProcessDaysFinal(parseInt(event.target.value)); }}
+                                        value={processDaysFinal}
+                                    />
+                                    {processDaysFinal > 0 && (
+                                        <Text
+                                            color={'green.900'}
+                                        >
+                                            Prazo calculado: {prazoDefinitivo.toLocaleDateString('pt-BR', {
+                                                day: '2-digit',
+                                                month: 'long',
+                                                year: 'numeric'
+                                            })}
+                                        </Text>)}
+                                </FormControl>
+                        )}
+
+                        {editProcess?.accountable && (
+                            <Text
+                                fontSize={'1rem'}
+                                fontWeight={'bold'}
+                            >
+                                Advogado Responsável: {analystList.find(x => x.uid == editProcess?.accountable)?.displayName}
+                            </Text>
+                        )}
+
+                        {editProcess?.date_final && (
+                            <Text
+                                fontSize={'0.8rem'}
+                                fontWeight={'bold'}
+                                color={'blue.300'}
+                            >
+                                Data Final: {editProcess?.date_final?.toDate().toLocaleDateString('pt-BR', {
+                                    year: 'numeric',
+                                    month: '2-digit',
+                                    day: '2-digit',
+                                    hour: '2-digit',
+                                    minute: '2-digit'
+                                })}
+                            </Text>
                         )}
 
                         <Text
@@ -637,6 +792,7 @@ const ProcessListPage: NextPage = () => {
                             </Text>
                         )}
 
+
                     </ModalBody>
 
                     <ModalFooter>
@@ -650,7 +806,8 @@ const ProcessListPage: NextPage = () => {
                         <Button
                             colorScheme='red'
                             mr={3}
-                            hidden={true}
+                            hidden={role != 'admin'}
+                            onClick={() => _handleDeleteProcess()}
                         >
                             Deletar
                         </Button>
@@ -666,7 +823,6 @@ const ProcessListPage: NextPage = () => {
 }
 
 export default ProcessListPage;
-
 
 export const getServerSideProps: GetServerSideProps = async (ctx) => {
     const {['upsa.role']: upsaRole} = parseCookies(ctx);
