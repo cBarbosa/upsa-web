@@ -72,7 +72,7 @@ const AuthProvider: FC = ({ children }) => {
             setUser(res);
             setCookie(null, 'upsa.role', snap.get('role'), {
                 maxAge: 30 * 24 * 60 * 60,
-            })
+            });
         } catch (error) {
             console.error(error);
         }

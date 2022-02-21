@@ -26,12 +26,11 @@ import {useRouter} from 'next/router';
 import {FcGoogle} from 'react-icons/fc';
 
 const Links = [
-    {label: 'Dashboard', to: '/', rule: ['admin', 'analyst', 'avocado', 'candidate']},
-    {label: 'Usuários', to: '/users', rule: ['admin']},
-    {label: 'Processos', to: '/process', rule: ['admin', 'avocado']},
-    {label: 'Pendências', to: '/pending', rule: ['admin', 'avocado', 'analyst']},
-    {label: 'Advogado', to: '/profile/avocado', rule: ['admin', 'avocado']},
-    {label: 'Analista', to: '/profile/analyst', rule: ['admin', 'analyst']},
+    {label: 'Dashboard', to: '/', rule: ['admin', 'analyst', 'avocado', 'candidate', 'none']},
+    {label: 'Usuários', to: '/users', rule: ['admin', 'avocado']},
+    {label: 'Processos', to: '/process', rule: ['admin', 'avocado', 'analyst']},
+    {label: 'Pendências', to: '/pending', rule: ['avocado']},
+    {label: 'Minha Lista', to: '/profile/analyst', rule: ['analyst']},
 ];
 
 interface NavLinkProps extends ChakraLinkProps {
@@ -105,6 +104,9 @@ export default function NavBar() {
                                 size={'sm'}
                                 src={user?.photoURL ?? ''}
                             />
+                            <Text>
+                                {user.displayName}
+                            </Text>
                         </MenuButton>
                         <MenuList>
                             {/*<MenuItem>Link 1</MenuItem>*/}
