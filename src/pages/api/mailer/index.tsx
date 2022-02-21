@@ -29,15 +29,36 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
             html: <div>{req.body.message}</div>
         };
 
-        // verify connection configuration
-        transporter.verify(function (error:any, success:any) {
-            if (error) {
-                console.log(error);
-            } else {
-                console.log("Server is ready to take our messages");
-            }
-        });
-        res.status(200);
+        // try {
+        //     // verify connection configuration
+        //     transporter.verify(function (error:any, success:any) {
+        //         if (error) {
+        //             console.log(error);
+        //         } else {
+        //             console.log("Server is ready to take our messages");
+        //         }
+        //     });
+        //     res.status(200);
+        // } catch (error) {
+        //     console.log(error);
+        //     res.status(400).end((error));
+        // }
+
+        try {
+            transporter.sendMail(mailData, (err:any, data:any) => {
+                if (err) {
+                  console.log(err);
+                  res.send("error" + JSON.stringify(err));
+                } else {
+                  console.log("mail send");
+                  res.send("success");
+                }
+            });
+            res.status(200);
+        } catch (error) {
+            console.log(error);
+            res.status(400).end((error));
+        }
 
         // try {
         //     transporter.sendMail(mailData, function (err:any, info:any) {
