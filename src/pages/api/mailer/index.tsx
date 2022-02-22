@@ -4,18 +4,18 @@ let nodemailer = require('nodemailer');
 export default async (req: NextApiRequest, res: NextApiResponse) => {
 
     const transporter = nodemailer.createTransport({
-        pool: true,
+        // pool: true,
         port: 587,
-        secure: true,
-        host: 'smtp.enterprisetecnologia.com.br',
+        secure: false,
+        host: 'mail.upsa.smile.tec.br',
         auth: {
-          user: 'pedido@enterprisetecnologia.com.br',
-          pass: ',|SUn^TKw3',
+          user: 'app@upsa.smile.tec.br',
+          pass: 'Xatuba2022',
         },
-        tls: {
-            // do not fail on invalid certs
-            rejectUnauthorized: false,
-          },
+        // tls: {
+        //     // do not fail on invalid certs
+        //     rejectUnauthorized: true,
+        //   },
     });
 
     if(req.method ==='GET') {

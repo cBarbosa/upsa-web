@@ -51,6 +51,7 @@ import {db} from '../../services/firebase';
 import {parseCookies} from "nookies";
 import InputMask from 'react-input-mask';
 import DataTableRCkakra from "../../Components/Table";
+import { api } from '../../services/api';
 
 type ProcessType = {
     uid: string;
@@ -223,6 +224,14 @@ const ProcessListPage: NextPage = () => {
     };
 
     const _handleEditProcess = async (item: ProcessType) => {
+
+        api.get(`processos/numero/${item.number}/json`).then(data => {
+            console.debug('themis-data', data.data);
+        }).catch(function (error) {
+            // handle error
+            console.log(error);
+        });
+
         setEditProcess({...item, ['updated_at']: Timestamp.now() });
         if(role ==='analyst') {
             setDeadLineProcess(item.deadline?.find(x=>x.deadline_interpreter == user?.uid) ?? null);
