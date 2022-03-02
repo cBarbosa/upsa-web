@@ -1,4 +1,4 @@
-import {collection, deleteDoc, doc, getDocs, orderBy, query, updateDoc, where} from 'firebase/firestore';
+import {collection, deleteDoc, doc, getDocs, orderBy, query, updateDoc} from 'firebase/firestore';
 import React, {Fragment, useMemo} from 'react';
 import {useEffect, useState} from 'react';
 import {useAuth} from '../../Contexts/AuthContext';
@@ -128,20 +128,28 @@ export default function UsersPage({data}: any) {
     };
 
     const roles = (role: string) => {
+        let _role = '';
+
         switch (role) {
             case 'avocado':
-                return 'Advogado'
+                _role = 'Advogado';
+                break;
             case 'admin':
-                return 'Administrador'
+                _role = 'Administrador';
+                break;
             case 'analyst':
-                return 'Analista'
+                _role = 'Analista';
+                break;
             case 'candidate':
-                return 'Candidato'
+                _role = 'Candidato';
             case 'none':
-                return 'Sem permissão'
+                _role = 'Candidato';
+                break;
             default:
-                return 'Sem regra';
+                _role = 'Sem regra';
         }
+
+        return _role;
     };
 
     const columns = useMemo(
@@ -156,8 +164,7 @@ export default function UsersPage({data}: any) {
             },
             {
                 Header: 'Permissão',
-                accessor: 'role',
-                isNumeric: true,
+                accessor: 'role'
             },
             {
                 Header: 'Dt. Criação',
@@ -274,7 +281,7 @@ export default function UsersPage({data}: any) {
                                 placeholder='Escolha o perfil'
                                 size={'md'}
                                 variant={'flushed'}
-                                value={editUser?.role}
+                                // value={editUser?.role}
                                 onChange={(event) => setEditProfile(event.target.value)}
                             >
                                 <option value='none' selected={editUser?.role == 'none'}>Candidato</option>

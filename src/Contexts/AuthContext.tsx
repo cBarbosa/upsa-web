@@ -81,7 +81,7 @@ const AuthProvider: FC = ({ children }) => {
     const logout = async () => {
         try {
             await signOut(authentication).then(r => {
-                destroyCookie(null, 'upsa.role')
+                destroyCookie(null, 'upsa.role');
             });
         } catch (error) {
             console.error(error);

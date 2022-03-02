@@ -1,14 +1,13 @@
-import { db } from "../../../services/firebase";
-import DataTableRCkakra from "../../../Components/Table";
+import { db } from '../../../../services/firebase';
+import DataTableRCkakra from '../../../../Components/Table';
 import Head from "next/head";
 import {
     GetServerSideProps,
     NextPage
 } from "next/types";
-import BottomNav from "../../../Components/BottomNav";
-import NavBar from "../../../Components/NavBar";
-import { useAuth } from "../../../Contexts/AuthContext";
-import {parseCookies} from "nookies";
+import BottomNav from '../../../../Components/BottomNav';
+import NavBar from '../../../../Components/NavBar';
+import { useAuth } from '../../../../Contexts/AuthContext';
 import {
     Box,
     Container,
@@ -52,7 +51,9 @@ import {
     where
 } from "firebase/firestore";
 import InputMask from 'react-input-mask';
-import { EditIcon, RepeatIcon } from "@chakra-ui/icons";
+import { AddIcon, EditIcon, RepeatIcon } from "@chakra-ui/icons";
+import { parseCookies } from 'nookies';
+import { useRouter } from 'next/router';
 
 type ProcessType = {
     uid: string;
@@ -86,7 +87,7 @@ type UserType = {
     createdAt: string;
 };
 
-const AnalystHome: NextPage = () => {
+const AnalystCreate: NextPage = () => {
     const toast = useToast();
     const database = db;
     const proccessCollection = collection(database, 'proccess');
@@ -98,9 +99,20 @@ const AnalystHome: NextPage = () => {
     const [deadLineProcess, setDeadLineProcess] = useState<DeadLineProcessType | null>(null);
     const [prazo, setPrazo] = useState<Date>(new Date());
     const [processDays, setProcessDays] = useState(0);
+    const {['upsa.role']: upsaRole} = parseCookies(null);
+    const route = useRouter();
 
     useEffect(() => {
-        getProcessList();
+        
+        if (user != null) {
+            console.log('passo 1');
+            getProcessList().then(() => {
+                if(upsaRole !='analyst') {
+                    route.push('/');
+                }
+            });
+        }    
+
         getAvocadoList();
     }, []);
 
@@ -149,7 +161,7 @@ const AnalystHome: NextPage = () => {
                 createdAt: snapshot.data().createdAt
             } as UserType);
         });
-        setAvocadoList(result);
+        // setAvocadoList(result);
     };
 
     function getProcessFromData() {
@@ -314,7 +326,7 @@ const AnalystHome: NextPage = () => {
     return (
         <>
           <Head>
-            <title>UPSA - Analista</title>
+            <title>UPSA - Cadastro de Prazo</title>
           </Head>
   
           <NavBar/>
@@ -322,14 +334,23 @@ const AnalystHome: NextPage = () => {
             <Container minH={'calc(100vh - 142px)'} maxW='container.xl' py={10}>
                 <Flex justifyContent={'space-between'}>
                     <Heading color={'gray.600'}>
-                        Meus processos
+                        Cadastrar Prazo
                     </Heading>
-                    <Button
-                        onClick={() => getProcessList()}
-                        colorScheme={'blue'}
-                    >
-                        <RepeatIcon w={16}/>
-                    </Button>
+
+                    <Flex justifyContent={'space-between'} width={200}>
+                        <Button
+                            onClick={() => getProcessList()}
+                            colorScheme={'blue'}
+                        >
+                            <RepeatIcon w={16}/>
+                        </Button>
+                        <Button
+                            colorScheme={'blue'}
+                        >
+                            <AddIcon w={16}/>
+                        </Button>
+                    </Flex>
+                    
                 </Flex>
                 
                 {processList.length > 0 ? (
@@ -606,20 +627,21 @@ const AnalystHome: NextPage = () => {
     );
 }
   
-export default AnalystHome;
+export default AnalystCreate;
 
 export const getServerSideProps: GetServerSideProps = async (ctx) => {
-    const {['upsa.role']: upsaRole} = parseCookies(ctx);
-    const acceptedRules = ['admin', 'analyst'];
+    // const {['upsa.role']: upsaRole} = parseCookies(ctx);
+    // const acceptedRules = ['analyst'];
 
-    if (!acceptedRules.includes(upsaRole)) {
-        return {
-            redirect: {
-                destination: '/',
-                permanent: false,
-            },
-        }
-    }
+    // if (!acceptedRules.includes(upsaRole)) {
+    //     return {
+    //         redirect: {
+    //             destination: '/',
+    //             permanent: false,
+    //         },
+    //     }
+    // }
+
     return {
         props: {}
     };

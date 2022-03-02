@@ -225,7 +225,7 @@ const ProcessListPage: NextPage = () => {
 
     const _handleEditProcess = async (item: ProcessType) => {
 
-        api.get(`processos/numero/${item.number}/json`).then(data => {
+        api.get(`themis/process/${item.number}`).then(data => {
             console.debug('themis-data', data.data);
         }).catch(function (error) {
             // handle error

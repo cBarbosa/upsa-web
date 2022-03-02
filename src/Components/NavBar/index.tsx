@@ -11,7 +11,6 @@ import {
     MenuButton,
     MenuList,
     MenuItem,
-    MenuDivider,
     useDisclosure,
     useColorModeValue,
     Stack,
@@ -26,11 +25,17 @@ import {useRouter} from 'next/router';
 import {FcGoogle} from 'react-icons/fc';
 
 const Links = [
-    {label: 'Dashboard', to: '/', rule: ['admin', 'analyst', 'avocado', 'candidate', 'none']},
-    {label: 'Usuários', to: '/users', rule: ['admin', 'avocado']},
-    {label: 'Processos', to: '/process', rule: ['admin', 'avocado', 'analyst']},
-    {label: 'Pendências', to: '/pending', rule: ['avocado']},
-    {label: 'Minha Lista', to: '/profile/analyst', rule: ['analyst']},
+    { label: 'Home', to: '/', rule: ['admin', 'analyst', 'avocado', 'candidate', 'none'] },
+    /* Admin */
+    { label: 'Processos', to: '/process', rule: ['admin'] },
+    /* Avocado */
+    { label: 'Usuários', to: '/users', rule: ['admin', 'avocado'] },
+    { label: 'Divergência', to: '/profile/avocado/pending', rule: ['avocado'] },
+    { label: 'Distribuidos', to: '/profile/avocado/done', rule: ['avocado'] },
+    /* Analyst */
+    { label: 'Cadastrar Prazo', to: '/profile/analyst/create', rule: ['analyst'] },
+    { label: 'Interpretados', to: '/profile/analyst/waiting', rule: ['analyst'] },
+    { label: 'Distribuidos', to: '/profile/analyst/done', rule: ['analyst'] },
 ];
 
 interface NavLinkProps extends ChakraLinkProps {
