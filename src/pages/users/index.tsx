@@ -1,4 +1,12 @@
-import {collection, deleteDoc, doc, getDocs, orderBy, query, updateDoc} from 'firebase/firestore';
+import {
+    collection,
+    deleteDoc,
+    doc,
+    getDocs,
+    orderBy,
+    query,
+    updateDoc
+} from 'firebase/firestore';
 import React, {Fragment, useMemo} from 'react';
 import {useEffect, useState} from 'react';
 import {useAuth} from '../../Contexts/AuthContext';
@@ -10,8 +18,15 @@ import {
     FormControl,
     FormLabel,
     Heading,
-    Input, Select,
-    Modal, ModalBody, ModalCloseButton, ModalContent, ModalFooter, ModalHeader, ModalOverlay,
+    Input,
+    Select,
+    Modal,
+    ModalBody,
+    ModalCloseButton,
+    ModalContent,
+    ModalFooter,
+    ModalHeader,
+    ModalOverlay,
     Divider,
     useDisclosure,
     Stack,
@@ -34,22 +49,30 @@ type UserType = {
     email: string;
     role: string;
     photoURL?: string;
+    themis_id?: number;
     phoneNumber?: string;
     createdAt: string;
 };
 
 export default function UsersPage({data}: any) {
     const database = db;
-    const usersCollection = collection(database, 'users');
     const toast = useToast();
+    const route = useRouter();
+    const usersCollection = collection(database, 'users');
     const {user, role, isAuthenticated} = useAuth();
     const {isOpen, onOpen, onClose} = useDisclosure();
-    const router = useRouter();
     const [users, setUsers] = useState<UserType[]>([]);
     const [editUser, setEditUser] = useState<UserType | null>(null);
     const [editProfile, setEditProfile] = useState<string>('none');
+    const {['upsa.role']: upsaRole} = parseCookies(null);
 
     useEffect(() => {
+        if (user != null) {
+            if(upsaRole !='admin'
+                && upsaRole !='avocado') {
+                route.push('/');
+            }
+        }
         getUsers();
     }, []);
 
@@ -65,11 +88,6 @@ export default function UsersPage({data}: any) {
                 role: snapshot.data().role,
                 email: snapshot.data().email,
                 photoURL: snapshot.data().photoURL,
-                // createdAt: snapshot.data().createdAt.toDate().toLocaleDateString('pt-BR', {
-                //     day: '2-digit',
-                //     month: 'long',
-                //     year: 'numeric'
-                // })
                 createdAt: snapshot.data().createdAt.toDate().toLocaleDateString('pt-BR')
             } as UserType);
         });
@@ -368,19 +386,17 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
     //     });
     // };
 
-    const {['upsa.role']: upsaRole} = parseCookies(ctx);
-    const acceptedRules = ['admin', 'avocado'];
+    // const {['upsa.role']: upsaRole} = parseCookies(ctx);
+    // const acceptedRules = ['admin', 'avocado'];
 
-    console.log(upsaRole);
-
-    if (!acceptedRules.includes(upsaRole)) {
-        return {
-            redirect: {
-                destination: '/',
-                permanent: false,
-            },
-        }
-    }
+    // if (!acceptedRules.includes(upsaRole)) {
+    //     return {
+    //         redirect: {
+    //             destination: '/',
+    //             permanent: false,
+    //         },
+    //     }
+    // }
 
     return {
         props: {}
