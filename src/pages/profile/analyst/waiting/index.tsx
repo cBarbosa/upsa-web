@@ -55,41 +55,8 @@ import { parseCookies } from 'nookies';
 import { useRouter } from 'next/router';
 import { SingleDatepicker } from 'chakra-dayzed-datepicker';
 import { api } from '../../../../services/api';
-
-type ProcessType = {
-    uid: string;
-    number: string;
-    author: string;
-    defendant: string;
-    decision: string;
-    accountable: string;
-    themis_id?: number;
-    deadline: DeadLineProcessType[];
-    description_forward?:string;
-    date_final?: string;
-    active: boolean;
-    created_at: Timestamp;
-    updated_at: Timestamp;
-};
-
-type DeadLineProcessType = {
-    deadline_internal_date: string;
-    deadline_court_date: string;
-    deadline_interpreter: string;
-    checked: boolean;
-    created_at: Timestamp;
-};
-
-type UserType = {
-    uid: string;
-    displayName: string;
-    email: string;
-    role: string;
-    photoURL?: string;
-    phoneNumber?: string;
-    themis_id?: number;
-    createdAt: string;
-};
+import { ProcessType } from '../../../../models/ThemisTypes';
+import { UserType } from '../../../../models/FirebaseTypes';
 
 const AnalystWaiting: NextPage = () => {
     const toast = useToast();
@@ -215,8 +182,12 @@ const AnalystWaiting: NextPage = () => {
 
     const _handleEditProcess = async (item: ProcessType) => {
         setEditProcess({...item, ['updated_at']: Timestamp.now() });
-        const _internalDate = new Date(item?.deadline?.find(x=>x.deadline_interpreter == user?.uid)?.deadline_internal_date ?? new Date());
-        const _courtDate = new Date(item?.deadline?.find(x=>x.deadline_interpreter == user?.uid)?.deadline_court_date ?? new Date());
+        const _strInternalDate = `${item?.deadline?.find(x=>x.deadline_interpreter == user?.uid)?.deadline_internal_date}`;
+        const _strCourtDate = `${item?.deadline?.find(x=>x.deadline_interpreter == user?.uid)?.deadline_court_date}`;
+
+        const _internalDate = new Date(parseInt(_strInternalDate.split('/')[2]), parseInt(_strInternalDate.split('/')[1])-1, parseInt(_strInternalDate.split('/')[0]));
+        const _courtDate = new Date(parseInt(_strCourtDate.split('/')[2]), parseInt(_strCourtDate.split('/')[1])-1, parseInt(_strCourtDate.split('/')[0]));
+
         setInternalDate(_internalDate);
         setCourtDate(_courtDate);
         onOpen();
@@ -684,7 +655,7 @@ const AnalystWaiting: NextPage = () => {
 
                         {(editProcess?.deadline !=null
                             && editProcess?.deadline.length == 2
-                            && !editProcess?.deadline?.every((val, i, arr) => val.deadline_internal_date === arr[0].deadline_internal_date)
+                            && !editProcess?.deadline?.every((val, i, arr) => val.deadline_internal_date == arr[0].deadline_internal_date)
                             ) && (
                             <Alert status='error' variant='left-accent'>
                                 <AlertIcon />
@@ -694,7 +665,7 @@ const AnalystWaiting: NextPage = () => {
 
                         {(editProcess?.deadline !=null
                             && editProcess?.deadline.length == 2
-                            && !editProcess?.deadline?.every((val, i, arr) => val.deadline_court_date === arr[0].deadline_court_date)
+                            && !editProcess?.deadline?.every((val, i, arr) => val.deadline_court_date == arr[0].deadline_court_date)
                             ) && (
                             <Alert status='error' variant='left-accent'>
                                 <AlertIcon />

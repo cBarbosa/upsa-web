@@ -21,7 +21,7 @@ import {
     useToast
 } from "@chakra-ui/react";
 import InputMask from 'react-input-mask';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { SingleDatepicker } from 'chakra-dayzed-datepicker';
 import { api } from "../../../../services/api";
 import {
@@ -33,29 +33,8 @@ import {
     where
 } from "firebase/firestore";
 import { db } from "../../../../services/firebase";
-
-type ProcessType = {
-    uid: string;
-    number: string;
-    author: string;
-    defendant: string;
-    decision: string;
-    accountable: string;
-    themis_id?: number;
-    deadline: DeadLineProcessType[];
-    active: boolean;
-    created_at: Timestamp;
-    updated_at: Timestamp;
-    date_final: Timestamp;
-};
-
-type DeadLineProcessType = {
-    deadline_internal_date: string;
-    deadline_court_date: string;
-    deadline_interpreter: string;
-    checked: boolean;
-    created_at: Timestamp;
-};
+import { ProcessType } from '../../../../models/ThemisTypes';
+import { useRouter } from "next/router";
 
 const AnalystCreate: NextPage = () => {
     const database = db;
@@ -69,6 +48,16 @@ const AnalystCreate: NextPage = () => {
     const [processDecision, setProcessDecision] = useState('');
     const [internalDate, setInternalDate] = useState(new Date());
     const [courtDate, setCourtDate] = useState(new Date());
+    const {['upsa.role']: upsaRole} = parseCookies(null);
+    const route = useRouter();
+
+    useEffect(() => {
+        if (user != null) {
+            if(upsaRole !='analyst') {
+                route.push('/');
+            }
+        }
+    }, []);
 
     const verifyDate = async (ref : Date, func: Function) => {
         if(ref < new Date()) {

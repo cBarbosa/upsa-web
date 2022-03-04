@@ -52,38 +52,8 @@ import {parseCookies} from "nookies";
 import InputMask from 'react-input-mask';
 import DataTableRCkakra from "../../Components/Table";
 import { api } from '../../services/api';
-
-type ProcessType = {
-    uid: string;
-    number: string;
-    author: string;
-    defendant: string;
-    decision: string;
-    accountable: string;
-    deadline: DeadLineProcessType[];
-    active: boolean;
-    created_at: Timestamp;
-    updated_at: Timestamp;
-    date_final: Timestamp;
-};
-
-type DeadLineProcessType = {
-    deadline_days: number;
-    deadline_date: Timestamp;
-    deadline_interpreter: string;
-    checked: boolean;
-    created_at: Timestamp;
-};
-
-type UserType = {
-    uid: string;
-    displayName: string;
-    email: string;
-    role: string;
-    photoURL?: string;
-    phoneNumber?: string;
-    createdAt: string;
-};
+import { ProcessType, DeadLineProcessType } from '../../models/ThemisTypes';
+import { UserType } from '../../models/FirebaseTypes';
 
 const ProcessListPage: NextPage = () => {
     const database = db;
@@ -235,8 +205,8 @@ const ProcessListPage: NextPage = () => {
         setEditProcess({...item, ['updated_at']: Timestamp.now() });
         if(role ==='analyst') {
             setDeadLineProcess(item.deadline?.find(x=>x.deadline_interpreter == user?.uid) ?? null);
-            setPrazo(item.deadline?.find(x=>x.deadline_interpreter == user?.uid)?.deadline_date.toDate() ?? new Date())
-            setProcessDays(item.deadline?.find(x=>x.deadline_interpreter == user?.uid)?.deadline_days ?? 0);
+            // setPrazo(item.deadline?.find(x=>x.deadline_interpreter == user?.uid)?.dead.toDate() ?? new Date())
+            // setProcessDays(item.deadline?.find(x=>x.deadline_interpreter == user?.uid)?.deadline_days ?? 0);
         }
         onOpenEdit();
     };
@@ -581,7 +551,7 @@ const ProcessListPage: NextPage = () => {
                         {/* Exibe a mensagem de inconsistência */}
                         {(editProcess?.deadline !=null
                             && editProcess?.deadline.length == 2
-                            && !editProcess?.deadline?.every((val, i, arr) => val.deadline_days === arr[0].deadline_days)
+                            // && !editProcess?.deadline?.every((val, i, arr) => val.deadline_days === arr[0].deadline_days)
                             ) && (
                             <Alert status='error' variant='left-accent'>
                                 <AlertIcon />
@@ -662,7 +632,7 @@ const ProcessListPage: NextPage = () => {
                         )}
 
                         {/* Lista as interpretações dos analistas */}
-                        {(role==='admin' || role =='avocado') && (
+                        {/* {(role==='admin' || role =='avocado') && (
                             editProcess?.deadline?.map((process, index) => {
                                 return(
                                     <Alert
@@ -686,7 +656,7 @@ const ProcessListPage: NextPage = () => {
                                     </Alert>
                                 );
                             })
-                        )}
+                        )} */}
 
                         {/* Permite ao analista inserir uma data de interpreteção */}
                         {role === 'analyst'
@@ -719,7 +689,7 @@ const ProcessListPage: NextPage = () => {
                         )}
 
                         {/* Permite ao advogado definir a data divergente que será respeitada */}
-                        {role === 'avocado'
+                        {/* {role === 'avocado'
                             && (editProcess?.deadline?.length == 2)
                             && (!editProcess?.deadline?.every((val, i, arr) => val.deadline_days === arr[0].deadline_days))
                             && (
@@ -746,7 +716,7 @@ const ProcessListPage: NextPage = () => {
                                             })}
                                         </Text>)}
                                 </FormControl>
-                        )}
+                        )} */}
 
                         {editProcess?.accountable && (
                             <Text
@@ -763,13 +733,7 @@ const ProcessListPage: NextPage = () => {
                                 fontWeight={'bold'}
                                 color={'blue.300'}
                             >
-                                Data Final: {editProcess?.date_final?.toDate().toLocaleDateString('pt-BR', {
-                                    year: 'numeric',
-                                    month: '2-digit',
-                                    day: '2-digit',
-                                    hour: '2-digit',
-                                    minute: '2-digit'
-                                })}
+                                Data Final: {editProcess?.date_final}
                             </Text>
                         )}
 

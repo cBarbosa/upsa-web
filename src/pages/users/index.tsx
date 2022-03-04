@@ -42,17 +42,7 @@ import NavBar from '../../Components/NavBar';
 import BottomNav from '../../Components/BottomNav';
 import {parseCookies} from "nookies";
 import DataTableRCkakra from "../../Components/Table";
-
-type UserType = {
-    uid: string;
-    displayName: string;
-    email: string;
-    role: string;
-    photoURL?: string;
-    themis_id?: number;
-    phoneNumber?: string;
-    createdAt: string;
-};
+import { UserType } from '../../models/FirebaseTypes';
 
 export default function UsersPage({data}: any) {
     const database = db;

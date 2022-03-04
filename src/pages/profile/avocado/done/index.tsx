@@ -49,11 +49,10 @@ import {
     RepeatIcon
 } from "@chakra-ui/icons";
 import InputMask from 'react-input-mask';
-import { api } from "../../../../services/api";
 import { ProcessType } from '../../../../models/ThemisTypes';
 import { UserType } from '../../../../models/FirebaseTypes';
 
-const AnalystDone: NextPage = () => {
+const AvocadoDone: NextPage = () => {
 
     const {isAuthenticated, role, user} = useAuth();
     const database = db;
@@ -69,7 +68,7 @@ const AnalystDone: NextPage = () => {
     useEffect(() => {
         if (user != null) {
             getProcessList().then(() => {
-                if(upsaRole !='analyst') {
+                if(upsaRole !='avocado') {
                     route.push('/');
                 }
             });
@@ -78,16 +77,17 @@ const AnalystDone: NextPage = () => {
     }, []);
 
     const getProcessList = async () => {
-        const processQuery = query(proccessCollection, where('active', '==', true));
+        const processQuery = query(proccessCollection, where('active', '==', true), where('accountable', '==', user?.uid));
         const querySnapshot = await getDocs(processQuery);
 
         const result:ProcessType[] = [];
         querySnapshot.forEach((snapshot) => {
 
-            const hasAccountability = (snapshot.data() as ProcessType)?.deadline?.some(x => x.deadline_interpreter == user?.uid);
+            const hasNoInternalDateDivergency = (snapshot.data() as ProcessType)?.deadline?.every((val, i, arr) => val.deadline_internal_date === arr[0].deadline_internal_date);
+            const hasNoCourtDateDivergency = (snapshot.data() as ProcessType)?.deadline?.every((val, i, arr) => val.deadline_court_date === arr[0].deadline_court_date);
             const hasTwoDeadlines = (snapshot.data() as ProcessType)?.deadline?.length == 2;
 
-            if(hasTwoDeadlines && hasAccountability)
+            if(hasTwoDeadlines && (hasNoInternalDateDivergency && hasNoCourtDateDivergency))
             {
                 result.push({
                     uid: snapshot.id,
@@ -109,7 +109,7 @@ const AnalystDone: NextPage = () => {
     };
 
     const getAvocadoList = async () => {
-        const processQuery = query(collection(database, 'users'), where('role', '==', 'avocado'));
+        const processQuery = query(collection(database, 'users'));
         const querySnapshot = await getDocs(processQuery);
 
         const result:UserType[] = [];
@@ -171,42 +171,7 @@ const AnalystDone: NextPage = () => {
 
     const _handleEditProcess = async (item: ProcessType) => {
         setEditProcess({...item, ['updated_at']: Timestamp.now() });
-        if(!item.themis_id) {
-            await _handleGetProcessOnThemis(item.number);
-        }
         onOpen();
-    };
-
-    const _handleGetProcessOnThemis = async (processNumber:string) => {
-
-        api.get(`themis/process/${processNumber}`).then(result => {
-            
-            if(result.status === 204) {
-                return;
-            }
-
-            updateProcessNumberFromThemis(result?.data?.id).then((result) => {
-                console.debug('updateProcessNumberFromThemis-result', result);
-                toast({
-                    title: 'Processo',
-                    description: 'Processo atualizado com as informações do Themis',
-                    status: 'info',
-                    duration: 9000,
-                    isClosable: true,
-                });
-            });
-
-        }).catch(function (error) {
-            console.log(error);
-        });
-    }
-
-    const updateProcessNumberFromThemis = async (themis_id:number) => {
-        const _processRef = doc(db, `proccess/${editProcess?.uid}`);
-
-        await updateDoc(_processRef, {
-            themis_id: themis_id
-        });
     };
 
     const columns = useMemo(
@@ -242,13 +207,13 @@ const AnalystDone: NextPage = () => {
     return (
         <>
             <Head>
-                <title>UPSA - Processos Distribuídos</title>
+                <title>UPSA - Distribuidos</title>
             </Head>
             <NavBar/>
             <Container minH={'calc(100vh - 142px)'} maxW='container.xl' py={10}>
                 <Flex justifyContent={'space-between'}>
                     <Heading color={'gray.600'}>
-                        Processos Distribuídos
+                        Processos Distribuidos
                     </Heading>
                     <Button
                             onClick={() => getProcessList()}
@@ -285,26 +250,6 @@ const AnalystDone: NextPage = () => {
                     <ModalHeader>Dados do processo (Visualização)</ModalHeader>
                     <ModalCloseButton/>
                     <ModalBody pb={6}>
-
-                        {(editProcess?.deadline !=null
-                            && editProcess?.deadline.length == 2
-                            && !editProcess?.deadline?.every((val, i, arr) => val.deadline_internal_date === arr[0].deadline_internal_date)
-                            ) && (
-                            <Alert status='error' variant='left-accent'>
-                                <AlertIcon />
-                                INCONSISTÊNCIA DE DATAS DIVERGENTES (Data Interna)
-                            </Alert>
-                        )}
-
-                        {(editProcess?.deadline !=null
-                            && editProcess?.deadline.length == 2
-                            && !editProcess?.deadline?.every((val, i, arr) => val.deadline_court_date === arr[0].deadline_court_date)
-                            ) && (
-                            <Alert status='error' variant='left-accent'>
-                                <AlertIcon />
-                                INCONSISTÊNCIA DE DATAS DIVERGENTES (Data Judicial)
-                            </Alert>
-                        )}
 
                         <Flex>
                         <FormControl>
@@ -396,8 +341,44 @@ const AnalystDone: NextPage = () => {
                             </Text>
                         )}
 
+                        {editProcess?.deadline[0]?.deadline_internal_date && (
+                            <Text
+                                fontSize={'0.8rem'}
+                                color={'blue.300'}
+                            >
+                                Data Interna {editProcess?.deadline[0]?.deadline_internal_date} por {avocadoList.find(x => x.uid == editProcess?.deadline[0]?.deadline_interpreter)?.displayName}
+                            </Text>
+                        )}
+
+                        {editProcess?.deadline[1]?.deadline_internal_date && (
+                            <Text
+                                fontSize={'0.8rem'}
+                                color={'blue.300'}
+                            >
+                                Data Interna {editProcess?.deadline[1]?.deadline_internal_date} por {avocadoList.find(x => x.uid == editProcess?.deadline[1]?.deadline_interpreter)?.displayName}
+                            </Text>
+                        )}
+
+                        {editProcess?.deadline[0]?.deadline_court_date && (
+                            <Text
+                                fontSize={'0.8rem'}
+                                color={'blue.300'}
+                            >
+                                Data Judicial {editProcess?.deadline[0]?.deadline_court_date} por {avocadoList.find(x => x.uid == editProcess?.deadline[0]?.deadline_interpreter)?.displayName}
+                            </Text>
+                        )}
+
+                        {editProcess?.deadline[1]?.deadline_court_date && (
+                            <Text
+                                fontSize={'0.8rem'}
+                                color={'blue.300'}
+                            >
+                                Data Judicial {editProcess?.deadline[1]?.deadline_court_date} por {avocadoList.find(x => x.uid == editProcess?.deadline[1]?.deadline_interpreter)?.displayName}
+                            </Text>
+                        )}
+
                         <Text
-                            fontSize={'0.6rem'}
+                            fontSize={'0.rem'}
                             fontWeight={'bold'}
                         >
                             Criado em: {editProcess?.created_at?.toDate().toLocaleDateString('pt-BR', {
@@ -451,7 +432,7 @@ const AnalystDone: NextPage = () => {
     );
 }
 
-export default AnalystDone;
+export default AvocadoDone;
 
 export const getServerSideProps: GetServerSideProps = async (ctx) => {
     // const {['upsa.role']: upsaRole} = parseCookies(ctx);

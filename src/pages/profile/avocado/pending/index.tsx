@@ -34,6 +34,8 @@ import {
 import React, { useEffect, useMemo, useState } from "react";
 import { db } from "../../../../services/firebase";
 import {
+    arrayRemove,
+    arrayUnion,
     collection,
     doc,
     getDocs,
@@ -49,11 +51,12 @@ import {
     RepeatIcon
 } from "@chakra-ui/icons";
 import InputMask from 'react-input-mask';
+import { SingleDatepicker } from 'chakra-dayzed-datepicker';
 import { api } from "../../../../services/api";
-import { ProcessType } from '../../../../models/ThemisTypes';
+import { ProcessType, DeadLineProcessType } from '../../../../models/ThemisTypes';
 import { UserType } from '../../../../models/FirebaseTypes';
 
-const AnalystDone: NextPage = () => {
+const AvocadoPending: NextPage = () => {
 
     const {isAuthenticated, role, user} = useAuth();
     const database = db;
@@ -65,11 +68,14 @@ const AnalystDone: NextPage = () => {
     const {isOpen, onOpen, onClose} = useDisclosure();
     const [editProcess, setEditProcess] = useState<ProcessType | null>(null);
     const toast = useToast();
+    const [internalDate, setInternalDate] = useState(new Date());
+    const [courtDate, setCourtDate] = useState(new Date());
+    const [observation, setObservation] = useState('');
 
     useEffect(() => {
         if (user != null) {
             getProcessList().then(() => {
-                if(upsaRole !='analyst') {
+                if(upsaRole !='avocado') {
                     route.push('/');
                 }
             });
@@ -78,16 +84,17 @@ const AnalystDone: NextPage = () => {
     }, []);
 
     const getProcessList = async () => {
-        const processQuery = query(proccessCollection, where('active', '==', true));
+        const processQuery = query(proccessCollection, where('active', '==', true), where('accountable', '==', user?.uid));
         const querySnapshot = await getDocs(processQuery);
 
         const result:ProcessType[] = [];
         querySnapshot.forEach((snapshot) => {
 
-            const hasAccountability = (snapshot.data() as ProcessType)?.deadline?.some(x => x.deadline_interpreter == user?.uid);
+            const hasInternalDateDivergency = !(snapshot.data() as ProcessType)?.deadline?.every((val, i, arr) => val.deadline_internal_date === arr[0].deadline_internal_date);
+            const hasCourtDateDivergency = !(snapshot.data() as ProcessType)?.deadline?.every((val, i, arr) => val.deadline_court_date === arr[0].deadline_court_date);
             const hasTwoDeadlines = (snapshot.data() as ProcessType)?.deadline?.length == 2;
 
-            if(hasTwoDeadlines && hasAccountability)
+            if(hasTwoDeadlines && (hasInternalDateDivergency || hasCourtDateDivergency))
             {
                 result.push({
                     uid: snapshot.id,
@@ -109,7 +116,7 @@ const AnalystDone: NextPage = () => {
     };
 
     const getAvocadoList = async () => {
-        const processQuery = query(collection(database, 'users'), where('role', '==', 'avocado'));
+        const processQuery = query(collection(database, 'users'));
         const querySnapshot = await getDocs(processQuery);
 
         const result:UserType[] = [];
@@ -171,42 +178,137 @@ const AnalystDone: NextPage = () => {
 
     const _handleEditProcess = async (item: ProcessType) => {
         setEditProcess({...item, ['updated_at']: Timestamp.now() });
-        if(!item.themis_id) {
-            await _handleGetProcessOnThemis(item.number);
-        }
         onOpen();
     };
 
-    const _handleGetProcessOnThemis = async (processNumber:string) => {
+    const _handleUpdateProcess = async () => {
+        try {
+            const _processRef = doc(db, `proccess/${editProcess?.uid}`);
 
-        api.get(`themis/process/${processNumber}`).then(result => {
-            
-            if(result.status === 204) {
-                return;
-            }
-
-            updateProcessNumberFromThemis(result?.data?.id).then((result) => {
-                console.debug('updateProcessNumberFromThemis-result', result);
+            if(internalDate <= new Date()) {
                 toast({
                     title: 'Processo',
-                    description: 'Processo atualizado com as informações do Themis',
-                    status: 'info',
+                    description: "O Prazo Interno deve ser maior que a data atual",
+                    status: 'error',
                     duration: 9000,
                     isClosable: true,
                 });
+                return;
+            }
+    
+            if(courtDate <= internalDate) {
+                toast({
+                    title: 'Processo',
+                    description: "O Prazo judicial deve ser maior que o Prazo Interno",
+                    status: 'error',
+                    duration: 9000,
+                    isClosable: true,
+                });
+                return;
+            }
+
+            if(observation == '') {
+                toast({
+                    title: 'Processo',
+                    description: 'Necessário informar a descrição do processo judicial',
+                    status: 'error',
+                    duration: 9000,
+                    isClosable: true,
+                });
+                return;
+            }
+
+            const _internalDate = internalDate.toLocaleDateString('pt-BR',{
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit'
+            });
+            const _courtDate = courtDate.toLocaleDateString('pt-BR',{
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit'
             });
 
+            let deadlineArray: DeadLineProcessType[] = [];
+            editProcess?.deadline?.forEach(element => {
+                deadlineArray.push({
+                    deadline_internal_date: element.deadline_internal_date,
+                    deadline_court_date: element.deadline_court_date,
+                    deadline_interpreter: element.deadline_interpreter,
+                    checked: true,
+                    checked_at: Timestamp.now()
+                } as DeadLineProcessType);
+            });
+
+            await _handleSetFowardProcessOnThemis(_internalDate, _courtDate);
+
+            await updateDoc(_processRef, {
+                updated_at: editProcess?.updated_at,
+                description_forward: observation ?? null,
+                date_final: _courtDate ?? null,
+                deadline: arrayUnion(deadlineArray)
+            });
+
+            toast({
+                title: 'Processo',
+                description: 'Processo distribuído com sucesso',
+                status: 'success',
+                duration: 9000,
+                isClosable: true,
+            });
+            
+        } catch (error) {
+            console.log(error);
+
+            toast({
+                title: 'Processo',
+                description: 'Erro atualizando o processo',
+                status: 'error',
+                duration: 9000,
+                isClosable: true,
+            });
+        }
+
+        cleanVariables();
+        onClose();
+    };
+
+    const _handleSetFowardProcessOnThemis = async (
+        _internalDate:string,
+        _courtDate:string) => {
+
+        const _foward = {
+            "data": _internalDate,
+            "dataJudicial": _courtDate,
+            "descricao": observation,
+            "advogado": {
+               "id": avocadoList.find(x => x.uid == editProcess?.accountable)?.themis_id ?? null
+            }
+        };
+
+        api.put(`themis/process/add-foward/${editProcess?.number}`, _foward).then(result =>
+        {
+            if(result.data) {
+                toast({
+                    title: 'Processo (Themis)',
+                    description: 'Processo distribuido com sucesso',
+                    status: 'success',
+                    duration: 9000,
+                    isClosable: true,
+                });
+            }
+            return result.data;
         }).catch(function (error) {
             console.log(error);
+            toast({
+                title: 'Processo (Themis)',
+                description: 'Não foi possível distribuir o processo',
+                status: 'error',
+                duration: 9000,
+                isClosable: true,
+            });
         });
-    }
-
-    const updateProcessNumberFromThemis = async (themis_id:number) => {
-        const _processRef = doc(db, `proccess/${editProcess?.uid}`);
-
-        await updateDoc(_processRef, {
-            themis_id: themis_id
-        });
+        return true;
     };
 
     const columns = useMemo(
@@ -239,16 +341,36 @@ const AnalystDone: NextPage = () => {
         () => getProcessFromData(), [process],
     );
 
+    const verifyDate = async (ref : Date, func: Function) => {
+        if(ref < new Date()) {
+            toast({
+                title: 'Processo',
+                description: "A data informada deve ser maior que hoje!",
+                status: 'error',
+                duration: 9000,
+                isClosable: true,
+            });
+            func(new Date());
+        }
+    };
+
+    const cleanVariables = () => {
+        setEditProcess(null);
+        setObservation('');
+        setInternalDate(new Date());
+        setCourtDate(new Date());
+    }
+
     return (
         <>
             <Head>
-                <title>UPSA - Processos Distribuídos</title>
+                <title>UPSA - Divergências</title>
             </Head>
             <NavBar/>
             <Container minH={'calc(100vh - 142px)'} maxW='container.xl' py={10}>
                 <Flex justifyContent={'space-between'}>
                     <Heading color={'gray.600'}>
-                        Processos Distribuídos
+                        Divergências
                     </Heading>
                     <Button
                             onClick={() => getProcessList()}
@@ -282,29 +404,103 @@ const AnalystDone: NextPage = () => {
             >
                 <ModalOverlay/>
                 <ModalContent>
-                    <ModalHeader>Dados do processo (Visualização)</ModalHeader>
+                    <ModalHeader>Dados do processo (Distribuição)</ModalHeader>
                     <ModalCloseButton/>
                     <ModalBody pb={6}>
 
-                        {(editProcess?.deadline !=null
-                            && editProcess?.deadline.length == 2
-                            && !editProcess?.deadline?.every((val, i, arr) => val.deadline_internal_date === arr[0].deadline_internal_date)
-                            ) && (
-                            <Alert status='error' variant='left-accent'>
-                                <AlertIcon />
-                                INCONSISTÊNCIA DE DATAS DIVERGENTES (Data Interna)
-                            </Alert>
-                        )}
+                            <Flex>
+                                <Box padding = {5}>
+                                {(editProcess?.deadline !=null
+                                    && editProcess?.deadline.length == 2
+                                    && !editProcess?.deadline?.every((val, i, arr) => val.deadline_internal_date === arr[0].deadline_internal_date)
+                                    ) && (
+                                    <>
+                                        <Alert status='error' variant='left-accent'>
+                                            <AlertIcon />
+                                            <Text>
+                                                {editProcess?.deadline[0].deadline_internal_date} : {avocadoList.find(x => x.uid == editProcess?.deadline[0].deadline_interpreter)?.displayName}
+                                            </Text>
+                                        </Alert>
+                                        <Alert status='error' variant='left-accent'>
+                                            <AlertIcon />
+                                            <Text>
+                                                {editProcess?.deadline[1].deadline_internal_date} : {avocadoList.find(x => x.uid == editProcess?.deadline[1].deadline_interpreter)?.displayName}
+                                            </Text>
+                                        </Alert>
+                                        <FormControl>
+                                            <FormLabel>Prazo Interno</FormLabel>
+                                            <SingleDatepicker
+                                                date={internalDate}
+                                                onDateChange={(date:Date) => [setInternalDate(date), verifyDate(date, setInternalDate)]}
+                                            />
+                                            <Text
+                                                fontSize={'0.8rem'}
+                                                color={'GrayText'}
+                                            >
+                                                Data Formatada: {internalDate.toLocaleDateString('pt-BR', {
+                                                    year: 'numeric',
+                                                    month: '2-digit',
+                                                    day: '2-digit'
+                                                })}
+                                            </Text>
+                                            
+                                        </FormControl>
+                                    </>
+                                )}
+                                </Box>
+                                
+                                <Box padding = {5}>
+                                {(editProcess?.deadline !=null
+                                    && editProcess?.deadline.length == 2
+                                    && !editProcess?.deadline?.every((val, i, arr) => val.deadline_court_date === arr[0].deadline_court_date)
+                                    ) && (
+                                    <>
+                                        <Alert status='error' variant='left-accent'>
+                                            <AlertIcon />
+                                            <Text>
+                                                {editProcess?.deadline[0].deadline_court_date} : {avocadoList.find(x => x.uid == editProcess?.deadline[0].deadline_interpreter)?.displayName}
+                                            </Text>
+                                        </Alert>
+                                        <Alert status='error' variant='left-accent'>
+                                            <AlertIcon />
+                                            <Text>
+                                                {editProcess?.deadline[1].deadline_court_date} : {avocadoList.find(x => x.uid == editProcess?.deadline[1].deadline_interpreter)?.displayName}
+                                            </Text>
+                                        </Alert>
+                                        <FormControl>
+                                            <FormLabel>Prazo Judicial</FormLabel>
+                                            <SingleDatepicker
+                                                date={courtDate}
+                                                onDateChange={(date:Date) => [setCourtDate(date), verifyDate(date, setCourtDate)]}
+                                            />
+                                            <Text
+                                                fontSize={'0.8rem'}
+                                                color={'GrayText'}
+                                            >
+                                                Data Formatada: {courtDate.toLocaleDateString('pt-BR', {
+                                                    year: 'numeric',
+                                                    month: '2-digit',
+                                                    day: '2-digit'
+                                                })}
+                                            </Text>
+                                            
+                                        </FormControl>
+                                    </>
+                                )}
+                                </Box>
+                                
+                            </Flex>
 
-                        {(editProcess?.deadline !=null
-                            && editProcess?.deadline.length == 2
-                            && !editProcess?.deadline?.every((val, i, arr) => val.deadline_court_date === arr[0].deadline_court_date)
-                            ) && (
-                            <Alert status='error' variant='left-accent'>
-                                <AlertIcon />
-                                INCONSISTÊNCIA DE DATAS DIVERGENTES (Data Judicial)
-                            </Alert>
-                        )}
+                            <FormControl mt={4}>
+                                    <FormLabel>Descrição para distribuição</FormLabel>
+                                    <Textarea
+                                        placeholder='Descrição para distribuição'
+                                        variant={'filled'}
+                                        onChange={event => setObservation(event.target.value)}
+                                        value={observation}
+                                        rows={2}
+                                    />
+                                </FormControl>
 
                         <Flex>
                         <FormControl>
@@ -430,7 +626,7 @@ const AnalystDone: NextPage = () => {
                         <Button
                             colorScheme='blue'
                             mr={3}
-                            hidden={true}
+                            onClick={() => _handleUpdateProcess()}
                         >
                             Salvar
                         </Button>
@@ -451,7 +647,7 @@ const AnalystDone: NextPage = () => {
     );
 }
 
-export default AnalystDone;
+export default AvocadoPending;
 
 export const getServerSideProps: GetServerSideProps = async (ctx) => {
     // const {['upsa.role']: upsaRole} = parseCookies(ctx);
