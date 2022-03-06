@@ -278,7 +278,7 @@ const AnalystDone: NextPage = () => {
                 isOpen={isOpen}
                 onClose={onClose}
                 closeOnOverlayClick={false}
-                size={'full'}
+                size={'xl'}
             >
                 <ModalOverlay/>
                 <ModalContent>
@@ -289,6 +289,7 @@ const AnalystDone: NextPage = () => {
                         {(editProcess?.deadline !=null
                             && editProcess?.deadline.length == 2
                             && !editProcess?.deadline?.every((val, i, arr) => val.deadline_internal_date === arr[0].deadline_internal_date)
+                            && !editProcess.date_final
                             ) && (
                             <Alert status='error' variant='left-accent'>
                                 <AlertIcon />
@@ -299,6 +300,7 @@ const AnalystDone: NextPage = () => {
                         {(editProcess?.deadline !=null
                             && editProcess?.deadline.length == 2
                             && !editProcess?.deadline?.every((val, i, arr) => val.deadline_court_date === arr[0].deadline_court_date)
+                            && !editProcess.date_final
                             ) && (
                             <Alert status='error' variant='left-accent'>
                                 <AlertIcon />

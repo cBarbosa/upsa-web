@@ -73,7 +73,6 @@ const AnalystWaiting: NextPage = () => {
     const [courtDate, setCourtDate] = useState(new Date());
     const [newInternalDate, setNewInternalDate] = useState(new Date());
     const [newCourtDate, setNewCourtDate] = useState(new Date());
-    const [observation, setObservation] = useState('');
 
     useEffect(() => {
         if (user != null) {
@@ -205,7 +204,7 @@ const AnalystWaiting: NextPage = () => {
                 if(!editProcess?.accountable) {
                     toast({
                         title: 'Processo',
-                        description: "Escolha um advogado responsável",
+                        description: 'Escolha um advogado responsável',
                         status: 'error',
                         duration: 9000,
                         isClosable: true,
@@ -216,7 +215,7 @@ const AnalystWaiting: NextPage = () => {
                 if(newInternalDate <= new Date()) {
                     toast({
                         title: 'Processo',
-                        description: "O Prazo Interno deve ser maior que a data atual",
+                        description: 'O Prazo Interno deve ser maior que a data atual',
                         status: 'error',
                         duration: 9000,
                         isClosable: true,
@@ -227,7 +226,7 @@ const AnalystWaiting: NextPage = () => {
                 if(newCourtDate <= newInternalDate) {
                     toast({
                         title: 'Processo',
-                        description: "O Prazo judicial deve ser maior que o Prazo Interno",
+                        description: 'O Prazo judicial deve ser maior que o Prazo Interno',
                         status: 'error',
                         duration: 9000,
                         isClosable: true,
@@ -264,7 +263,6 @@ const AnalystWaiting: NextPage = () => {
                     await _handleSendMessageDivergentProcessOnThemis(_date1, _date2, _court1, _court2);
                 } else {
                     _handleSetFowardProcessOnThemis(_date2, _court2).then(result => {
-                        console.log(result);
                         if(!result) {
                             toast({
                                 title: 'Processo (Themis)',
@@ -292,7 +290,6 @@ const AnalystWaiting: NextPage = () => {
                     decision: editProcess?.decision,
                     updated_at: editProcess?.updated_at,
                     accountable: editProcess?.accountable ?? null,
-                    description_forward: observation ?? null,
                     date_final: (_date1 == _date2 && _court1 == _court2) ? _court1 : null,
                     deadline: arrayUnion(dataProcessNode2)
                 });
@@ -306,8 +303,7 @@ const AnalystWaiting: NextPage = () => {
                 });
             } else { {/* Atualização do processo */}
 
-    
-                const dataProcessNode1 = {
+                    const dataProcessNode1 = {
                     deadline_internal_date: internalDate.toLocaleDateString('pt-BR',{
                         year: 'numeric',
                         month: '2-digit',
@@ -378,7 +374,7 @@ const AnalystWaiting: NextPage = () => {
             'InternalDate2': _date2,
             'CourtDate1': _court1,
             'CourtDate2': _court2,
-            'Observation': observation
+            'Observation': editProcess?.decision
         };
 
         api.post(`message/notify-avocado`, _mensagem).then(result =>
@@ -435,15 +431,28 @@ const AnalystWaiting: NextPage = () => {
     };
 
     const _handleSetFowardProcessOnThemis = async (
-        _newInternalDate:string,
-        _newCourtDate:string) => {
+        _internalDate:string,
+        _courtDate:string) => {
+        
+        const themisAvocadoId = avocadoList.find(x => x.uid == editProcess?.accountable)?.themis_id;
+
+        if(!themisAvocadoId) {
+            toast({
+                title: 'Processo',
+                description: 'Não foi possível distribuir o processo, advogado escolhido está sem vínculo com o Themis',
+                status: 'error',
+                duration: 9000,
+                isClosable: true,
+            });
+            return;
+        }
 
         const _foward = {
-            "data": _newInternalDate,
-            "dataJudicial": _newCourtDate,
-            "descricao": observation,
+            "data": _internalDate,
+            "dataJudicial": _courtDate,
+            "descricao": editProcess?.decision,
             "advogado": {
-               "id": avocadoList.find(x => x.uid == editProcess?.accountable)?.themis_id ?? null
+               "id": themisAvocadoId
             }
         };
 
@@ -470,7 +479,7 @@ const AnalystWaiting: NextPage = () => {
             });
         });
         return true;
-    }
+    };
 
     const _handlePostProcessOnThemis = async (processNumber:string) => {
 
@@ -582,7 +591,6 @@ const AnalystWaiting: NextPage = () => {
 
     function cleanVariables() {
         setEditProcess(null);
-        setObservation('');
         setInternalDate(new Date());
         setCourtDate(new Date());
         setNewInternalDate(new Date());
@@ -645,7 +653,7 @@ const AnalystWaiting: NextPage = () => {
                 isOpen={isOpen}
                 onClose={onClose}
                 closeOnOverlayClick={false}
-                size={'full'}
+                size={'xl'}
             >
                 <ModalOverlay/>
                 <ModalContent>
@@ -710,6 +718,7 @@ const AnalystWaiting: NextPage = () => {
                                 variant={'filled'}
                                 onChange={event => setEditProcess(editProcess != null ? {...editProcess, ['author']:event.target.value} : null)}
                                 value={editProcess?.author}
+                                readOnly={true}
                             />
                         </FormControl>
 
@@ -720,6 +729,7 @@ const AnalystWaiting: NextPage = () => {
                                 variant={'filled'}
                                 onChange={event => setEditProcess(editProcess != null ? {...editProcess, ['defendant']:event.target.value} : null)}
                                 value={editProcess?.defendant}
+                                readOnly={true}
                             />
                         </FormControl>
 
@@ -806,22 +816,6 @@ const AnalystWaiting: NextPage = () => {
                                 })}
                             </Select>
                         </FormControl>
-                        )}
-
-                        {/* Informe a descrição para distribuição */}
-                        {(editProcess?.deadline?.length == 1)
-                            && !editProcess?.deadline?.find(x=>x.deadline_interpreter == user?.uid)
-                        &&(
-                            <FormControl mt={4}>
-                                <FormLabel>Descrição para distribuição</FormLabel>
-                                <Textarea
-                                    placeholder='Descrição para distribuição'
-                                    variant={'filled'}
-                                    onChange={event => setObservation(event.target.value)}
-                                    value={observation}
-                                    rows={2}
-                                />
-                            </FormControl>
                         )}
 
                         {/* Visualização das informações permitindo a edição */}

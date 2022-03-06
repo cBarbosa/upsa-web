@@ -29,17 +29,17 @@ import {
     Input,
     Textarea,
     ModalFooter,
-    useToast
+    useToast,
+    AlertTitle,
+    AlertDescription
 } from "@chakra-ui/react";
 import React, { useEffect, useMemo, useState } from "react";
 import { db } from "../../../../services/firebase";
 import {
     collection,
-    doc,
     getDocs,
     query,
     Timestamp,
-    updateDoc,
     where
 } from "firebase/firestore";
 import { useRouter } from "next/router";
@@ -82,13 +82,13 @@ const AvocadoDone: NextPage = () => {
 
         const result:ProcessType[] = [];
         querySnapshot.forEach((snapshot) => {
+            const data = (snapshot.data() as ProcessType);
+            // const hasNoInternalDateDivergency = data?.deadline?.every((val, i, arr) => val.deadline_internal_date === arr[0].deadline_internal_date);
+            // const hasNoCourtDateDivergency = data?.deadline?.every((val, i, arr) => val.deadline_court_date === arr[0].deadline_court_date);
+            const hasTwoDeadlines = data?.deadline?.length == 2;
+            const isAlreadyResolved = !!data.date_final;
 
-            const hasNoInternalDateDivergency = (snapshot.data() as ProcessType)?.deadline?.every((val, i, arr) => val.deadline_internal_date === arr[0].deadline_internal_date);
-            const hasNoCourtDateDivergency = (snapshot.data() as ProcessType)?.deadline?.every((val, i, arr) => val.deadline_court_date === arr[0].deadline_court_date);
-            const hasTwoDeadlines = (snapshot.data() as ProcessType)?.deadline?.length == 2;
-
-            if(hasTwoDeadlines && (hasNoInternalDateDivergency && hasNoCourtDateDivergency))
-            {
+            if(hasTwoDeadlines && isAlreadyResolved) {
                 result.push({
                     uid: snapshot.id,
                     number: snapshot.data().number,
@@ -243,7 +243,7 @@ const AvocadoDone: NextPage = () => {
                 isOpen={isOpen}
                 onClose={onClose}
                 closeOnOverlayClick={false}
-                size={'full'}
+                size={'xl'}
             >
                 <ModalOverlay/>
                 <ModalContent>
@@ -303,7 +303,19 @@ const AvocadoDone: NextPage = () => {
                             />
                         </FormControl>
 
-                        {(editProcess?.deadline?.find(x=>x.deadline_interpreter == user?.uid)?.deadline_internal_date
+                        <Alert status='info' variant='left-accent' mt={3}>
+                            <AlertIcon />
+                            <Box flex='1'>
+                                <AlertTitle>
+                                    Data Judicial Final
+                                </AlertTitle>
+                                <AlertDescription display='block'>
+                                    {editProcess?.date_final}
+                                </AlertDescription>
+                            </Box>
+                        </Alert>
+
+                        {/* {(editProcess?.deadline?.find(x=>x.deadline_interpreter == user?.uid)?.deadline_internal_date
                         && editProcess?.deadline?.find(x=>x.deadline_interpreter == user?.uid)?.deadline_court_date) && (
                             <Alert status='info' variant='left-accent'>
                                 <AlertIcon />
@@ -319,7 +331,7 @@ const AvocadoDone: NextPage = () => {
                                     Data Judicial: {editProcess?.deadline?.find(x=>x.deadline_interpreter == user?.uid)?.deadline_court_date}
                                 </Text>
                             </Alert>
-                        )}
+                        )} */}
 
 
                         {editProcess?.accountable && (
@@ -328,16 +340,6 @@ const AvocadoDone: NextPage = () => {
                                 fontWeight={'bold'}
                             >
                                 Advogado Responsável: {avocadoList.find(x => x.uid == editProcess?.accountable)?.displayName}
-                            </Text>
-                        )}
-
-                        {editProcess?.date_final && (
-                            <Text
-                                fontSize={'0.8rem'}
-                                fontWeight={'bold'}
-                                color={'blue.300'}
-                            >
-                                Data Final: {editProcess?.date_final}
                             </Text>
                         )}
 
