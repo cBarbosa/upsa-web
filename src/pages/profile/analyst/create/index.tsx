@@ -99,6 +99,8 @@ const AnalystCreate: NextPage = () => {
         setProcessSummary('');
         setProcessAuthor('');
         setProcessDefendant('');
+
+        setFormVisible(false);
     };
 
     const _handleCreateProcess = async () => {
@@ -175,13 +177,10 @@ const AnalystCreate: NextPage = () => {
             duration: 9000,
             isClosable: true,
         });
-        setFormVisible(false);
         cleanVariables();
     };
 
     const _handleGetProcessOnThemis = async (processNumber:string) => {
-        
-        setFormVisible(false);
 
         api.get(`themis/process/${processNumber}`).then(result => {
             
@@ -372,14 +371,14 @@ const AnalystCreate: NextPage = () => {
                         <Button
                             colorScheme='blue'
                             mr={5}
-                            onClick={event => _handleCreateProcess()}
+                            onClick={_handleCreateProcess}
                         >
                             Cadastrar Prazo
                         </Button>
                         <Button
                             variant={'outline'}
                             colorScheme={'red'}
-                            onClick={() => [cleanVariables()]}>
+                            onClick={cleanVariables}>
                             Cancelar
                         </Button>
                     </Box>

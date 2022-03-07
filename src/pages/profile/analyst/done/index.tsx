@@ -87,8 +87,7 @@ const AnalystDone: NextPage = () => {
             const hasAccountability = (snapshot.data() as ProcessType)?.deadline?.some(x => x.deadline_interpreter == user?.uid);
             const hasTwoDeadlines = (snapshot.data() as ProcessType)?.deadline?.length == 2;
 
-            if(hasTwoDeadlines && hasAccountability)
-            {
+            if(hasTwoDeadlines && hasAccountability) {
                 result.push({
                     uid: snapshot.id,
                     number: snapshot.data().number,

@@ -52,7 +52,7 @@ import {parseCookies} from "nookies";
 import InputMask from 'react-input-mask';
 import DataTableRCkakra from "../../Components/Table";
 import { api } from '../../services/api';
-import { ProcessType, DeadLineProcessType } from '../../models/ThemisTypes';
+import { ProcessType } from '../../models/ThemisTypes';
 import { UserType } from '../../models/FirebaseTypes';
 
 const ProcessListPage: NextPage = () => {
@@ -71,7 +71,6 @@ const ProcessListPage: NextPage = () => {
     const [processDecision, setProcessDecision] = useState('');
     const [processDays, setProcessDays] = useState(0);
     const [editProcess, setEditProcess] = useState<ProcessType | null>(null);
-    const [deadLineProcess, setDeadLineProcess] = useState<DeadLineProcessType | null>(null);
     const [prazoDefinitivo, setPrazoDefinitivo] = useState<Date>(new Date());
     const [processDaysFinal, setProcessDaysFinal] = useState(0);
 
@@ -203,11 +202,6 @@ const ProcessListPage: NextPage = () => {
         });
 
         setEditProcess({...item, ['updated_at']: Timestamp.now() });
-        if(role ==='analyst') {
-            setDeadLineProcess(item.deadline?.find(x=>x.deadline_interpreter == user?.uid) ?? null);
-            // setPrazo(item.deadline?.find(x=>x.deadline_interpreter == user?.uid)?.dead.toDate() ?? new Date())
-            // setProcessDays(item.deadline?.find(x=>x.deadline_interpreter == user?.uid)?.deadline_days ?? 0);
-        }
         onOpenEdit();
     };
     
@@ -348,7 +342,7 @@ const ProcessListPage: NextPage = () => {
         [],
     );
 
-    function getProcessFromData() {
+    const getProcessFromData =() => {
         const arrData: {
             number: string;
             author: string;
@@ -375,7 +369,7 @@ const ProcessListPage: NextPage = () => {
         return arrData;
     }
 
-    function editProcessFromData(proc: ProcessType) {
+    const editProcessFromData = (proc: ProcessType) => {
         return (<IconButton
                 ml={4}
                 size='md'
@@ -389,11 +383,10 @@ const ProcessListPage: NextPage = () => {
             />);
     }
 
-    function cleanVariables() {
+    const cleanVariables = () => {
         setEditProcess(null);
         setProcessDays(0);
         setPrazo(new Date());
-        setDeadLineProcess(null);
         setPrazoDefinitivo(new Date());
         setProcessDaysFinal(0);
 

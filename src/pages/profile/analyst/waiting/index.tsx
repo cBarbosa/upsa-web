@@ -50,7 +50,11 @@ import {
     where
 } from "firebase/firestore";
 import InputMask from 'react-input-mask';
-import { AddIcon, EditIcon, RepeatIcon } from "@chakra-ui/icons";
+import {
+    AddIcon,
+    EditIcon,
+    RepeatIcon
+} from "@chakra-ui/icons";
 import { parseCookies } from 'nookies';
 import { useRouter } from 'next/router';
 import { SingleDatepicker } from 'chakra-dayzed-datepicker';
