@@ -273,7 +273,7 @@ const AvocadoDone: NextPage = () => {
                         
 
                         <FormControl>
-                            <FormLabel>Autor do processo</FormLabel>
+                            <FormLabel>Parte contrária</FormLabel>
                             <Input
                                 placeholder='Author'
                                 variant={'filled'}
@@ -283,7 +283,7 @@ const AvocadoDone: NextPage = () => {
                         </FormControl>
 
                         <FormControl>
-                            <FormLabel>Réu do processo</FormLabel>
+                            <FormLabel>Parte interessada</FormLabel>
                             <Input
                                 placeholder='Réu'
                                 variant={'filled'}

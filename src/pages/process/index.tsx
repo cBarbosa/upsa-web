@@ -54,6 +54,7 @@ import DataTableRCkakra from "../../Components/Table";
 import { api } from '../../services/api';
 import { ProcessType } from '../../models/ThemisTypes';
 import { UserType } from '../../models/FirebaseTypes';
+import { useRouter } from 'next/router';
 
 const ProcessListPage: NextPage = () => {
     const database = db;
@@ -73,9 +74,17 @@ const ProcessListPage: NextPage = () => {
     const [editProcess, setEditProcess] = useState<ProcessType | null>(null);
     const [prazoDefinitivo, setPrazoDefinitivo] = useState<Date>(new Date());
     const [processDaysFinal, setProcessDaysFinal] = useState(0);
+    const {['upsa.role']: upsaRole} = parseCookies(null);
+    const route = useRouter();
 
     useEffect(() => {
-        getProcess();
+        getProcess().then(()=>{
+            if (user != null) {
+                if(upsaRole !='admin') {
+                    route.push('/');
+                }
+            }
+        });
         getAnalystList();
     }, []);
 
@@ -457,7 +466,7 @@ const ProcessListPage: NextPage = () => {
                         </FormControl>
 
                         <FormControl>
-                            <FormLabel>Autor do processo</FormLabel>
+                            <FormLabel>Parte contrária</FormLabel>
                             <Input
                                 placeholder='Author'
                                 variant={'filled'}
@@ -467,7 +476,7 @@ const ProcessListPage: NextPage = () => {
                         </FormControl>
 
                         <FormControl>
-                            <FormLabel>Réu do processo</FormLabel>
+                            <FormLabel>Parte interessada</FormLabel>
                             <Input
                                 placeholder='Réu'
                                 variant={'filled'}
@@ -566,7 +575,7 @@ const ProcessListPage: NextPage = () => {
                         </FormControl>
 
                         <FormControl>
-                            <FormLabel>Autor do processo</FormLabel>
+                            <FormLabel>Parte contrária</FormLabel>
                             <Input
                                 placeholder='Author'
                                 variant={'filled'}
@@ -576,7 +585,7 @@ const ProcessListPage: NextPage = () => {
                         </FormControl>
 
                         <FormControl>
-                            <FormLabel>Réu do processo</FormLabel>
+                            <FormLabel>Parte interessada</FormLabel>
                             <Input
                                 placeholder='Réu'
                                 variant={'filled'}
@@ -791,16 +800,16 @@ const ProcessListPage: NextPage = () => {
 export default ProcessListPage;
 
 export const getServerSideProps: GetServerSideProps = async (ctx) => {
-    const {['upsa.role']: upsaRole} = parseCookies(ctx);
-    const acceptedRules = ['admin', 'analyst', 'avocado']
-    if (!acceptedRules.includes(upsaRole)) {
-        return {
-            redirect: {
-                destination: '/',
-                permanent: false,
-            },
-        }
-    }
+    // const {['upsa.role']: upsaRole} = parseCookies(ctx);
+    // const acceptedRules = ['admin', 'analyst', 'avocado']
+    // if (!acceptedRules.includes(upsaRole)) {
+    //     return {
+    //         redirect: {
+    //             destination: '/',
+    //             permanent: false,
+    //         },
+    //     }
+    // }
     return {
         props: {}
     };

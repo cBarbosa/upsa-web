@@ -108,7 +108,7 @@ const AnalystDone: NextPage = () => {
     };
 
     const getAvocadoList = async () => {
-        const processQuery = query(collection(database, 'users'), where('role', '==', 'avocado'));
+        const processQuery = query(collection(database, 'users'));
         const querySnapshot = await getDocs(processQuery);
 
         const result:UserType[] = [];
@@ -329,7 +329,7 @@ const AnalystDone: NextPage = () => {
                         
 
                         <FormControl>
-                            <FormLabel>Autor do processo</FormLabel>
+                            <FormLabel>Parte contrária</FormLabel>
                             <Input
                                 placeholder='Author'
                                 variant={'filled'}
@@ -339,7 +339,7 @@ const AnalystDone: NextPage = () => {
                         </FormControl>
 
                         <FormControl>
-                            <FormLabel>Réu do processo</FormLabel>
+                            <FormLabel>Parte interessada</FormLabel>
                             <Input
                                 placeholder='Réu'
                                 variant={'filled'}

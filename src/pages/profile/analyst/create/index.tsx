@@ -283,7 +283,7 @@ const AnalystCreate: NextPage = () => {
 
                     <Flex hidden={!formVisible}>
                         <FormControl>
-                            <FormLabel>Autor do processo</FormLabel>
+                            <FormLabel>Parte contrária</FormLabel>
                             <Input
                                 placeholder='Autor'
                                 variant={'filled'}
@@ -296,7 +296,7 @@ const AnalystCreate: NextPage = () => {
                         <Divider w={5}/>
 
                         <FormControl>
-                            <FormLabel>Réu do processo</FormLabel>
+                            <FormLabel>Parte interessada</FormLabel>
                             <Input
                                 placeholder='Réu'
                                 variant={'filled'}
@@ -421,7 +421,7 @@ const AnalystCreate: NextPage = () => {
                         </FormControl>
 
                         <FormControl>
-                            <FormLabel>Autor</FormLabel>
+                            <FormLabel>Parte contrária</FormLabel>
                             <Text
                                 fontSize={'0.8rem'}
                                 color={'GrayText'}
@@ -431,7 +431,7 @@ const AnalystCreate: NextPage = () => {
                         </FormControl>
 
                         <FormControl>
-                            <FormLabel>Réu</FormLabel>
+                            <FormLabel>Parte interessada</FormLabel>
                             <Text
                                 fontSize={'0.8rem'}
                                 color={'GrayText'}
