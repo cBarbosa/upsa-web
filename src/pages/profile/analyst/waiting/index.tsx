@@ -31,7 +31,8 @@ import {
     useToast,
     Select,
     Alert,
-    AlertIcon
+    AlertIcon,
+    Switch
 } from "@chakra-ui/react";
 import React, {
     useEffect,
@@ -77,6 +78,7 @@ const AnalystWaiting: NextPage = () => {
     const [courtDate, setCourtDate] = useState(new Date());
     const [newInternalDate, setNewInternalDate] = useState(new Date());
     const [newCourtDate, setNewCourtDate] = useState(new Date());
+    const [isCourtDeadline, setIsCourtDeadline] = useState(false);
 
     useEffect(() => {
         if (user != null) {
@@ -184,15 +186,25 @@ const AnalystWaiting: NextPage = () => {
     }
 
     const _handleEditProcess = async (item: ProcessType) => {
+        setIsCourtDeadline(false);
         setEditProcess({...item, ['updated_at']: Timestamp.now() });
         const _strInternalDate = `${item?.deadline?.find(x=>x.deadline_interpreter == user?.uid)?.deadline_internal_date}`;
         const _strCourtDate = `${item?.deadline?.find(x=>x.deadline_interpreter == user?.uid)?.deadline_court_date}`;
 
-        const _internalDate = new Date(parseInt(_strInternalDate.split('/')[2]), parseInt(_strInternalDate.split('/')[1])-1, parseInt(_strInternalDate.split('/')[0]));
-        const _courtDate = new Date(parseInt(_strCourtDate.split('/')[2]), parseInt(_strCourtDate.split('/')[1])-1, parseInt(_strCourtDate.split('/')[0]));
+        const _internalDate = _strInternalDate == 'null'
+            ? new Date()
+            : new Date(parseInt(_strInternalDate.split('/')[2]), parseInt(_strInternalDate.split('/')[1])-1, parseInt(_strInternalDate.split('/')[0]));
+        const _courtDate = _strCourtDate == 'null'
+            ? new Date()
+            : new Date(parseInt(_strCourtDate.split('/')[2]), parseInt(_strCourtDate.split('/')[1])-1, parseInt(_strCourtDate.split('/')[0]));
 
-        setInternalDate(_internalDate);
-        setCourtDate(_courtDate);
+        if((_strInternalDate != 'null' && _strCourtDate != 'null')
+            && (_strInternalDate != 'undefined' && _strCourtDate != 'undefined')) {
+            setIsCourtDeadline(true);
+        }
+
+        setInternalDate(_strInternalDate != 'null' ? _internalDate : new Date());
+        setCourtDate(_strCourtDate != 'null' ? _courtDate : new Date());
         onOpen();
     };
 
@@ -216,7 +228,7 @@ const AnalystWaiting: NextPage = () => {
                     return;
                 }
 
-                if(newInternalDate <= new Date()) {
+                if(isCourtDeadline && (newInternalDate <= new Date())) {
                     toast({
                         title: 'Processo',
                         description: 'O Prazo Interno deve ser maior que a data atual',
@@ -227,7 +239,7 @@ const AnalystWaiting: NextPage = () => {
                     return;
                 }
         
-                if(newCourtDate <= newInternalDate) {
+                if(isCourtDeadline && (newCourtDate <= newInternalDate)) {
                     toast({
                         title: 'Processo',
                         description: 'O Prazo judicial deve ser maior que o Prazo Interno',
@@ -238,30 +250,30 @@ const AnalystWaiting: NextPage = () => {
                     return;
                 }
 
-                const _internalDate = editProcess?.deadline[0].deadline_internal_date == newInternalDate.toLocaleDateString('pt-BR',{
+                let _internalDate = editProcess?.deadline[0].deadline_internal_date == (!isCourtDeadline ? null : newInternalDate.toLocaleDateString('pt-BR',{
                     year: 'numeric',
                     month: '2-digit',
                     day: '2-digit'
-                });
+                }));
 
-                const _courtDate = editProcess?.deadline[0].deadline_court_date == newCourtDate.toLocaleDateString('pt-BR',{
+                let _courtDate = editProcess?.deadline[0].deadline_court_date == (!isCourtDeadline ? null : newCourtDate.toLocaleDateString('pt-BR',{
                     year: 'numeric',
                     month: '2-digit',
                     day: '2-digit'
-                });
+                }));
 
                 const _date1 = editProcess?.deadline[0].deadline_internal_date;
-                const _date2 = newInternalDate.toLocaleDateString('pt-BR',{
+                const _date2 = isCourtDeadline ? newInternalDate.toLocaleDateString('pt-BR',{
                     year: 'numeric',
                     month: '2-digit',
                     day: '2-digit'
-                });
+                }) : 'null';
                 const _court1 = editProcess?.deadline[0].deadline_court_date;
-                const _court2 = newCourtDate.toLocaleDateString('pt-BR',{
+                const _court2 = isCourtDeadline ? newCourtDate.toLocaleDateString('pt-BR',{
                     year: 'numeric',
                     month: '2-digit',
                     day: '2-digit'
-                });
+                }) : 'null';
 
                 if(!_internalDate || !_courtDate) {
                     await _handleSendMessageDivergentProcessOnThemis(_date1, _date2, _court1, _court2);
@@ -308,16 +320,16 @@ const AnalystWaiting: NextPage = () => {
             } else { {/* Atualização do processo */}
 
                     const dataProcessNode1 = {
-                    deadline_internal_date: internalDate.toLocaleDateString('pt-BR',{
+                    deadline_internal_date: isCourtDeadline ? internalDate.toLocaleDateString('pt-BR',{
                         year: 'numeric',
                         month: '2-digit',
                         day: '2-digit'
-                    }),
-                    deadline_court_date: courtDate.toLocaleDateString('pt-BR',{
+                    }) : null,
+                    deadline_court_date: isCourtDeadline ? courtDate.toLocaleDateString('pt-BR',{
                         year: 'numeric',
                         month: '2-digit',
                         day: '2-digit'
-                    }),
+                    }) : null,
                     deadline_interpreter: user?.uid,
                     checked: false,
                     created_at: _nodeProcessRef?.created_at ?? Timestamp.now(),
@@ -339,7 +351,7 @@ const AnalystWaiting: NextPage = () => {
                     accountable: editProcess?.accountable ?? null,
                     deadline: arrayUnion(dataProcessNode1)
                 });
-    
+
                 toast({
                     title: 'Processo',
                     description: "Processo alterado com sucesso",
@@ -374,10 +386,10 @@ const AnalystWaiting: NextPage = () => {
 
         const _mensagem = {
             'ProcessNumber': editProcess?.number,
-            'InternalDate1': _date1,
-            'InternalDate2': _date2,
-            'CourtDate1': _court1,
-            'CourtDate2': _court2,
+            'InternalDate1': _date1 ?? 'Sem Prazo',
+            'InternalDate2': _date2 ?? 'Sem Prazo',
+            'CourtDate1': _court1 ?? 'Sem Prazo',
+            'CourtDate2': _court2 ?? 'Sem Prazo',
             'Observation': editProcess?.decision
         };
 
@@ -452,8 +464,8 @@ const AnalystWaiting: NextPage = () => {
         }
 
         const _foward = {
-            "data": _internalDate,
-            "dataJudicial": _courtDate,
+            "data": _internalDate ?? 'Sem Prazo',
+            "dataJudicial": _courtDate ?? 'Sem Prazo',
             "descricao": editProcess?.decision,
             "advogado": {
                "id": themisAvocadoId
@@ -593,12 +605,14 @@ const AnalystWaiting: NextPage = () => {
         () => getProcessFromData(), [process],
     );
 
-    function cleanVariables() {
+    const cleanVariables = async () => {
         setEditProcess(null);
         setInternalDate(new Date());
         setCourtDate(new Date());
         setNewInternalDate(new Date());
         setNewCourtDate(new Date());
+
+        setIsCourtDeadline(false);
     }
 
     const verifyDate = async (ref : Date, func: Function) => {
@@ -748,10 +762,28 @@ const AnalystWaiting: NextPage = () => {
                             />
                         </FormControl>
 
+                        <Flex
+                            justify="center"
+                            align="center"
+                            padding={5}
+                        >
+                            <FormLabel htmlFor="email-alerts">
+                                Este processo tem prazo judicial?
+                            </FormLabel>
+                            <Switch
+                                id="email-alerts"
+                                defaultIsChecked={isCourtDeadline}
+                                onChange={event => setIsCourtDeadline(event.target.checked)}
+                            />
+                        </Flex>
+
                         {/* Visualização das informações permitindo nova inserção */}
                         {!editProcess?.deadline?.find(x=>x.deadline_interpreter == user?.uid) && !editProcess?.date_final && (
-                            <Flex>
-                                <Box padding = {2} paddingRight= {10} >
+                            <Flex hidden={!isCourtDeadline}>
+                                <Box
+                                    padding = {2}
+                                    paddingRight= {10}
+                                >
                                 <FormControl>
                                     <FormLabel>Prazo Interno</FormLabel>
                                     <SingleDatepicker
@@ -824,7 +856,7 @@ const AnalystWaiting: NextPage = () => {
 
                         {/* Visualização das informações permitindo a edição */}
                         {editProcess?.deadline?.find(x=>x.deadline_interpreter == user?.uid) && !editProcess?.date_final && (
-                            <Flex>
+                            <Flex hidden={!isCourtDeadline}>
                                 <Box padding = {10}>
                                 <FormControl>
                                     <FormLabel>Prazo Interno</FormLabel>

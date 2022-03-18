@@ -310,7 +310,7 @@ const AvocadoDone: NextPage = () => {
                                     Data Judicial Final
                                 </AlertTitle>
                                 <AlertDescription display='block'>
-                                    {editProcess?.date_final}
+                                    {editProcess?.date_final != 'null' ? editProcess?.date_final : 'Definido sem prazo'}
                                 </AlertDescription>
                             </Box>
                         </Alert>
@@ -351,6 +351,14 @@ const AvocadoDone: NextPage = () => {
                                 Data Interna {editProcess?.deadline[0]?.deadline_internal_date} por {avocadoList.find(x => x.uid == editProcess?.deadline[0]?.deadline_interpreter)?.displayName}
                             </Text>
                         )}
+                        {editProcess?.deadline[0]?.deadline_internal_date == null && (
+                            <Text
+                                fontSize={'0.8rem'}
+                                color={'blue.300'}
+                            >
+                                Data Interna 'Sem Prazo', por {avocadoList.find(x => x.uid == editProcess?.deadline[0]?.deadline_interpreter)?.displayName}
+                            </Text>
+                        )}
 
                         {editProcess?.deadline[1]?.deadline_internal_date && (
                             <Text
@@ -358,6 +366,14 @@ const AvocadoDone: NextPage = () => {
                                 color={'blue.300'}
                             >
                                 Data Interna {editProcess?.deadline[1]?.deadline_internal_date} por {avocadoList.find(x => x.uid == editProcess?.deadline[1]?.deadline_interpreter)?.displayName}
+                            </Text>
+                        )}
+                        {editProcess?.deadline[1]?.deadline_internal_date == null && (
+                            <Text
+                                fontSize={'0.8rem'}
+                                color={'blue.300'}
+                            >
+                                Data Interna 'Sem Prazo', por {avocadoList.find(x => x.uid == editProcess?.deadline[1]?.deadline_interpreter)?.displayName}
                             </Text>
                         )}
 
@@ -369,6 +385,14 @@ const AvocadoDone: NextPage = () => {
                                 Data Judicial {editProcess?.deadline[0]?.deadline_court_date} por {avocadoList.find(x => x.uid == editProcess?.deadline[0]?.deadline_interpreter)?.displayName}
                             </Text>
                         )}
+                        {editProcess?.deadline[0]?.deadline_court_date == null && (
+                            <Text
+                                fontSize={'0.8rem'}
+                                color={'blue.300'}
+                            >
+                                Data Judicial 'Sem Prazo', por {avocadoList.find(x => x.uid == editProcess?.deadline[0]?.deadline_interpreter)?.displayName}
+                            </Text>
+                        )}
 
                         {editProcess?.deadline[1]?.deadline_court_date && (
                             <Text
@@ -376,6 +400,14 @@ const AvocadoDone: NextPage = () => {
                                 color={'blue.300'}
                             >
                                 Data Judicial {editProcess?.deadline[1]?.deadline_court_date} por {avocadoList.find(x => x.uid == editProcess?.deadline[1]?.deadline_interpreter)?.displayName}
+                            </Text>
+                        )}
+                        {editProcess?.deadline[1]?.deadline_court_date == null && (
+                            <Text
+                                fontSize={'0.8rem'}
+                                color={'blue.300'}
+                            >
+                                Data Judicial 'Sem Prazo', por {avocadoList.find(x => x.uid == editProcess?.deadline[1]?.deadline_interpreter)?.displayName}
                             </Text>
                         )}
 

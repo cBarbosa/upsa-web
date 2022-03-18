@@ -27,7 +27,8 @@ import {
     ModalHeader,
     ModalContent,
     useDisclosure,
-    ModalFooter
+    ModalFooter,
+    Switch
 } from "@chakra-ui/react";
 import InputMask from 'react-input-mask';
 import React, { useEffect, useState } from 'react';
@@ -64,6 +65,7 @@ const AnalystCreate: NextPage = () => {
     const route = useRouter();
     const [formVisible, setFormVisible] = useState(false);
     const {isOpen, onOpen, onClose} = useDisclosure();
+    const [isCourtDeadline, setIsCourtDeadline] = useState(false);
 
     useEffect(() => {
         if (user != null) {
@@ -101,6 +103,7 @@ const AnalystCreate: NextPage = () => {
         setProcessDefendant('');
 
         setFormVisible(false);
+        setIsCourtDeadline(false);
     };
 
     const _handleCreateProcess = async () => {
@@ -119,7 +122,7 @@ const AnalystCreate: NextPage = () => {
         //     return;
         // }
 
-        if(internalDate <= new Date()) {
+        if(isCourtDeadline && (internalDate <= new Date())) {
             toast({
                 title: 'Processo',
                 description: "O Prazo Interno deve ser maior que a data atual",
@@ -130,7 +133,7 @@ const AnalystCreate: NextPage = () => {
             return;
         }
 
-        if(courtDate <= internalDate) {
+        if(isCourtDeadline && (courtDate <= internalDate)) {
             toast({
                 title: 'Processo',
                 description: "O Prazo judicial deve ser maior que o Prazo Interno",
@@ -142,16 +145,16 @@ const AnalystCreate: NextPage = () => {
         }
 
         const dataProcessNode1 = {
-            deadline_internal_date: internalDate.toLocaleDateString('pt-BR', {
+            deadline_internal_date: isCourtDeadline ? internalDate.toLocaleDateString('pt-BR', {
                 year: 'numeric',
                 month: '2-digit',
                 day: '2-digit'
-            }),
-            deadline_court_date: courtDate.toLocaleDateString('pt-BR',{
+            }) : null,
+            deadline_court_date: isCourtDeadline ? courtDate.toLocaleDateString('pt-BR',{
                 year: 'numeric',
                 month: '2-digit',
                 day: '2-digit'
-            }),
+            }) : null,
             deadline_interpreter: user?.uid,
             checked: false,
             created_at: Timestamp.now()
@@ -317,8 +320,31 @@ const AnalystCreate: NextPage = () => {
                         />
                     </FormControl>
 
-                    <Flex hidden={!formVisible}>
-                        <Box padding = {10}>
+                    <Flex
+                        justify="center"
+                        align="center"
+                        hidden={!formVisible}
+                        padding={5}
+                    >
+                        <FormLabel htmlFor="email-alerts">
+                            Este processo tem prazo judicial?
+                        </FormLabel>
+                        <Switch
+                            id="email-alerts"
+                            defaultIsChecked={isCourtDeadline}
+                            onChange={event => setIsCourtDeadline(event.target.checked)}
+                        />
+                    </Flex>
+
+                    <Flex
+                        hidden={!isCourtDeadline}
+                        justify={'center'}
+                        align={'center'}
+                    >
+
+                        <Box
+                            padding={10}
+                        >
                         <FormControl>
                             <FormLabel>Prazo Interno</FormLabel>
                             <SingleDatepicker

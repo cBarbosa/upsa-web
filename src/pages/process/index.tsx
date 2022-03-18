@@ -235,8 +235,8 @@ const ProcessListPage: NextPage = () => {
                 defendant: editProcess?.defendant,
                 decision: editProcess?.decision,
                 updated_at: editProcess?.updated_at,
-                accountable: processDaysFinal > 0 ? user?.uid : null,
-                date_final: prazoDefinitivo ?? null
+                //accountable: processDaysFinal > 0 ? user?.uid : null,
+                //date_final: prazoDefinitivo ?? null
             });
 
             if(role === 'analyst' && processDays > 0) {
@@ -735,7 +735,75 @@ const ProcessListPage: NextPage = () => {
                                 fontWeight={'bold'}
                                 color={'blue.300'}
                             >
-                                Data Final: {editProcess?.date_final}
+                                Data Final: {editProcess?.date_final != 'null' ? editProcess?.date_final : 'Sem Prazo'}
+                            </Text>
+                        )}
+
+                        {editProcess?.deadline[0]?.deadline_internal_date && (
+                            <Text
+                                fontSize={'0.8rem'}
+                                color={'blue.300'}
+                            >
+                                Data Interna {editProcess?.deadline[0]?.deadline_internal_date} por {analystList.find(x => x.uid == editProcess?.deadline[0]?.deadline_interpreter)?.displayName}
+                            </Text>
+                        )}
+                        {editProcess?.deadline[0]?.deadline_internal_date == null && (
+                            <Text
+                                fontSize={'0.8rem'}
+                                color={'blue.300'}
+                            >
+                                Data Interna 'Sem Prazo', por {analystList.find(x => x.uid == editProcess?.deadline[0]?.deadline_interpreter)?.displayName}
+                            </Text>
+                        )}
+
+                        {editProcess?.deadline[1]?.deadline_internal_date && (
+                            <Text
+                                fontSize={'0.8rem'}
+                                color={'blue.300'}
+                            >
+                                Data Interna {editProcess?.deadline[1]?.deadline_internal_date} por {analystList.find(x => x.uid == editProcess?.deadline[1]?.deadline_interpreter)?.displayName}
+                            </Text>
+                        )}
+                        {editProcess?.deadline[1]?.deadline_internal_date == null && (
+                            <Text
+                                fontSize={'0.8rem'}
+                                color={'blue.300'}
+                            >
+                                Data Interna 'Sem Prazo', por {analystList.find(x => x.uid == editProcess?.deadline[1]?.deadline_interpreter)?.displayName}
+                            </Text>
+                        )}
+
+                        {editProcess?.deadline[0]?.deadline_court_date && (
+                            <Text
+                                fontSize={'0.8rem'}
+                                color={'blue.300'}
+                            >
+                                Data Judicial {editProcess?.deadline[0]?.deadline_court_date} por {analystList.find(x => x.uid == editProcess?.deadline[0]?.deadline_interpreter)?.displayName}
+                            </Text>
+                        )}
+                        {editProcess?.deadline[0]?.deadline_court_date == null && (
+                            <Text
+                                fontSize={'0.8rem'}
+                                color={'blue.300'}
+                            >
+                                Data Judicial 'Sem Prazo', por {analystList.find(x => x.uid == editProcess?.deadline[0]?.deadline_interpreter)?.displayName}
+                            </Text>
+                        )}
+
+                        {editProcess?.deadline[1]?.deadline_court_date && (
+                            <Text
+                                fontSize={'0.8rem'}
+                                color={'blue.300'}
+                            >
+                                Data Judicial {editProcess?.deadline[1]?.deadline_court_date} por {analystList.find(x => x.uid == editProcess?.deadline[1]?.deadline_interpreter)?.displayName}
+                            </Text>
+                        )}
+                        {editProcess?.deadline[1]?.deadline_court_date == null && (
+                            <Text
+                                fontSize={'0.8rem'}
+                                color={'blue.300'}
+                            >
+                                Data Judicial 'Sem Prazo', por {analystList.find(x => x.uid == editProcess?.deadline[1]?.deadline_interpreter)?.displayName}
                             </Text>
                         )}
 

@@ -32,7 +32,8 @@ import {
     useToast,
     AlertTitle,
     AlertDescription,
-    Stack
+    Stack,
+    Switch
 } from "@chakra-ui/react";
 import React, { useEffect, useMemo, useState } from "react";
 import { db } from "../../../../services/firebase";
@@ -73,6 +74,7 @@ const AvocadoPending: NextPage = () => {
     const toast = useToast();
     const [internalDate, setInternalDate] = useState(new Date());
     const [courtDate, setCourtDate] = useState(new Date());
+    const [isCourtDeadline, setIsCourtDeadline] = useState(false);
 
     useEffect(() => {
         if (user != null) {
@@ -208,7 +210,7 @@ const AvocadoPending: NextPage = () => {
         try {
             const _processRef = doc(db, `proccess/${editProcess?.uid}`);
 
-            if(internalDate <= new Date()) {
+            if(isCourtDeadline && (internalDate <= new Date())) {
                 toast({
                     title: 'Processo',
                     description: "O Prazo Interno deve ser maior que a data atual",
@@ -219,7 +221,7 @@ const AvocadoPending: NextPage = () => {
                 return;
             }
     
-            if(courtDate <= internalDate) {
+            if(isCourtDeadline && (courtDate <= internalDate)) {
                 toast({
                     title: 'Processo',
                     description: "O Prazo judicial deve ser maior que o Prazo Interno",
@@ -241,16 +243,16 @@ const AvocadoPending: NextPage = () => {
                 return;
             }
 
-            const _internalDate = internalDate.toLocaleDateString('pt-BR',{
+            const _internalDate = isCourtDeadline ? internalDate.toLocaleDateString('pt-BR',{
                 year: 'numeric',
                 month: '2-digit',
                 day: '2-digit'
-            });
-            const _courtDate = courtDate.toLocaleDateString('pt-BR',{
+            }) : 'null';
+            const _courtDate = isCourtDeadline ? courtDate.toLocaleDateString('pt-BR',{
                 year: 'numeric',
                 month: '2-digit',
                 day: '2-digit'
-            });
+            }) : 'null';
 
             editProcess?.deadline?.forEach(element => {
                 const updatedDeadline = {
@@ -273,7 +275,7 @@ const AvocadoPending: NextPage = () => {
             await updateDoc(_processRef, {
                 updated_at: editProcess?.updated_at,
                 decision: editProcess?.decision,
-                date_final: _courtDate
+                date_final: _courtDate ?? 'Sem Prazo'
             });
 
             await _handleSetFowardProcessOnThemis(_internalDate, _courtDate);
@@ -321,8 +323,8 @@ const AvocadoPending: NextPage = () => {
         }
 
         const _foward = {
-            "data": _internalDate,
-            "dataJudicial": _courtDate,
+            "data": _internalDate ?? 'Sem Prazo',
+            "dataJudicial": _courtDate ?? 'Sem Prazo',
             "descricao": editProcess?.decision,
             "advogado": {
                "id": themisAvocadoId
@@ -496,9 +498,24 @@ const AvocadoPending: NextPage = () => {
                             />
                         </FormControl>
 
+                        <Flex
+                            justify="center"
+                            align="center"
+                            padding={5}
+                        >
+                            <FormLabel htmlFor="email-alerts">
+                                Este processo tem prazo judicial?
+                            </FormLabel>
+                            <Switch
+                                id="email-alerts"
+                                defaultIsChecked={isCourtDeadline}
+                                onChange={event => setIsCourtDeadline(event.target.checked)}
+                            />
+                        </Flex>
+
                         <Flex>
                             <Box padding = {2}>
-                                <FormControl>
+                                <FormControl hidden={!isCourtDeadline}>
                                     <FormLabel>Prazo Interno</FormLabel>
                                     <SingleDatepicker
                                         date={internalDate}
@@ -516,6 +533,7 @@ const AvocadoPending: NextPage = () => {
                                     </Text>
                                     
                                 </FormControl>
+
                                 {(editProcess?.deadline !=null
                                     && editProcess?.deadline.length == 2
                                     && !editProcess?.deadline?.every((val, i, arr) => val.deadline_internal_date === arr[0].deadline_internal_date)
@@ -528,7 +546,7 @@ const AvocadoPending: NextPage = () => {
                                                         {avocadoList.find(x => x.uid == editProcess?.deadline[0].deadline_interpreter)?.displayName}
                                                     </AlertTitle>
                                                     <AlertDescription display='block'>
-                                                        {editProcess?.deadline[0].deadline_internal_date}
+                                                        {editProcess?.deadline[0].deadline_internal_date ?? 'Sem Prazo'}
                                                     </AlertDescription>
                                                 </Box>
                                             </Alert>
@@ -540,7 +558,7 @@ const AvocadoPending: NextPage = () => {
                                                         {avocadoList.find(x => x.uid == editProcess?.deadline[1].deadline_interpreter)?.displayName}
                                                     </AlertTitle>
                                                     <AlertDescription display='block'>
-                                                        {editProcess?.deadline[1].deadline_internal_date}
+                                                        {editProcess?.deadline[1].deadline_internal_date ?? 'Sem Prazo'}
                                                     </AlertDescription>
                                                 </Box>
                                             </Alert>
@@ -548,8 +566,8 @@ const AvocadoPending: NextPage = () => {
                                     )}
                             </Box>
                             
-                            <Box padding = {2}>
-                                <FormControl>
+                            <Box padding = {2} >
+                                <FormControl hidden={!isCourtDeadline}>
                                     <FormLabel>Prazo Judicial</FormLabel>
                                     <SingleDatepicker
                                         date={courtDate}
@@ -581,7 +599,7 @@ const AvocadoPending: NextPage = () => {
                                                     {avocadoList.find(x => x.uid == editProcess?.deadline[0].deadline_interpreter)?.displayName}
                                                 </AlertTitle>
                                                 <AlertDescription display='block'>
-                                                    {editProcess?.deadline[0].deadline_court_date}
+                                                    {editProcess?.deadline[0].deadline_court_date ?? 'Sem Prazo'}
                                                 </AlertDescription>
                                             </Box>
                                         </Alert>
@@ -593,7 +611,7 @@ const AvocadoPending: NextPage = () => {
                                                     {avocadoList.find(x => x.uid == editProcess?.deadline[1].deadline_interpreter)?.displayName}
                                                 </AlertTitle>
                                                 <AlertDescription display='block'>
-                                                    {editProcess?.deadline[1].deadline_court_date}
+                                                    {editProcess?.deadline[1].deadline_court_date ?? 'Sem Prazo'}
                                                 </AlertDescription>
                                             </Box>
                                         </Alert>

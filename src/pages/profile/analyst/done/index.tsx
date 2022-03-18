@@ -377,6 +377,18 @@ const AnalystDone: NextPage = () => {
                             </Alert>
                         )}
 
+                        {(editProcess?.deadline?.find(x=>x.deadline_interpreter == user?.uid)?.deadline_internal_date == null
+                            && editProcess?.deadline?.find(x=>x.deadline_interpreter == user?.uid)?.deadline_court_date == null) &&(
+                            <Alert status='info' variant='left-accent'>
+                                <AlertIcon />
+                                <Text
+                                    paddingRight={5}
+                                >
+                                    Foi Informado Sem Prazo
+                                </Text>
+                            </Alert>
+                        )}
+
 
                         {editProcess?.accountable && (
                             <Text
