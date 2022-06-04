@@ -112,6 +112,7 @@ const AnalystWaiting: NextPage = () => {
                     defendant: snapshot.data().defendant,
                     decision: snapshot.data().decision,
                     accountable: snapshot.data().accountable,
+                    instance: snapshot.data().instance,
                     deadline: snapshot.data().deadline,
                     themis_id: snapshot.data().themis_id,
                     date_final: snapshot.data().date_final,
@@ -582,11 +583,11 @@ const AnalystWaiting: NextPage = () => {
                 accessor: 'number',
             },
             {
-                Header: 'Autor',
+                Header: 'Parte Interessada',
                 accessor: 'author',
             },
             {
-                Header: 'Réu',
+                Header: 'Parte Contrária',
                 accessor: 'defendant',
             },
             {

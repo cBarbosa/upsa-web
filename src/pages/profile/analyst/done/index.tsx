@@ -94,6 +94,7 @@ const AnalystDone: NextPage = () => {
                     author: snapshot.data().author,
                     defendant: snapshot.data().defendant,
                     decision: snapshot.data().decision,
+                    instance: snapshot.data().instance,
                     accountable: snapshot.data().accountable,
                     deadline: snapshot.data().deadline,
                     themis_id: snapshot.data().themis_id,
@@ -215,11 +216,11 @@ const AnalystDone: NextPage = () => {
                 accessor: 'number',
             },
             {
-                Header: 'Autor',
+                Header: 'Parte Interessada',
                 accessor: 'author',
             },
             {
-                Header: 'Réu',
+                Header: 'Parte Contrária',
                 accessor: 'defendant',
             },
             {

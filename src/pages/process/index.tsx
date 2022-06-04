@@ -68,6 +68,7 @@ const ProcessListPage: NextPage = () => {
     const [prazo, setPrazo] = useState<Date>(new Date());
     const [processNumber, setProcessNumber] = useState('');
     const [processAuthor, setProcessAuthor] = useState('');
+    const [instance, setInstance] = useState('');
     const [processDefendant, setProcessDefendant] = useState('');
     const [processDecision, setProcessDecision] = useState('');
     const [processDays, setProcessDays] = useState(0);
@@ -100,6 +101,7 @@ const ProcessListPage: NextPage = () => {
                 author: snapshot.data().author,
                 defendant: snapshot.data().defendant,
                 decision: snapshot.data().decision,
+                instance: snapshot.data().instance,
                 accountable: snapshot.data().accountable,
                 deadline: snapshot.data().deadline,
                 created_at: snapshot.data().created_at,
@@ -332,11 +334,11 @@ const ProcessListPage: NextPage = () => {
                 accessor: 'number',
             },
             {
-                Header: 'Autor',
+                Header: 'Parte Interessada',
                 accessor: 'author',
             },
             {
-                Header: 'Réu',
+                Header: 'Parte Contrária',
                 accessor: 'defendant',
             },
             {
@@ -403,6 +405,7 @@ const ProcessListPage: NextPage = () => {
         setProcessAuthor('');
         setProcessDefendant('');
         setProcessDecision('');
+        setInstance('');
     }
 
     const dataTable = useMemo(

@@ -61,6 +61,7 @@ const AnalystCreate: NextPage = () => {
     const [processDecision, setProcessDecision] = useState('');
     const [internalDate, setInternalDate] = useState(new Date());
     const [courtDate, setCourtDate] = useState(new Date());
+    const [instance, setInstance] = useState('');
     const {['upsa.role']: upsaRole} = parseCookies(null);
     const route = useRouter();
     const [formVisible, setFormVisible] = useState(false);
@@ -101,6 +102,7 @@ const AnalystCreate: NextPage = () => {
         setProcessSummary('');
         setProcessAuthor('');
         setProcessDefendant('');
+        setInstance('');
 
         setFormVisible(false);
         setIsCourtDeadline(false);
@@ -165,6 +167,7 @@ const AnalystCreate: NextPage = () => {
             author: processAuthor ?? 'N/D',
             defendant: processDefendant ?? 'N/D',
             decision: processDecision,
+            instance: instance,
             active: true,
             themis_id: themisNumber,
             deadline: [dataProcessNode1],
@@ -197,11 +200,16 @@ const AnalystCreate: NextPage = () => {
                 });
                 return;
             }
+            
+            const parteContrariaText = `${result?.data?.parteContraria?.nome} (${result?.data?.posicaoParte?.posPassiva === 'Autor' ? 'Autor' : 'Réu'})`;
+            const parteInteressadaText = `${result?.data?.parteInteressada?.nome} (${result?.data?.posicaoParte?.posAtiva === 'Autor' ? 'Autor' : 'Réu'})`;
+
             setThemisNumber(result?.data?.id);
-            setProcessTitle(result.data.titulo);
-            setProcessSummary(result.data.resumo);
-            setProcessAuthor(result.data.parteContraria.nome);
-            setProcessDefendant(result.data.parteInteressada.nome);
+            setProcessTitle(`${result?.data?.titulo} (${result?.data?.instancia?.nome})`);
+            setProcessSummary(result?.data?.resumo);
+            setProcessAuthor(parteContrariaText);
+            setProcessDefendant(parteInteressadaText);
+            setInstance(result?.data?.instancia?.nome);
             onOpen();
         }).catch(function (error) {
             console.log(error);

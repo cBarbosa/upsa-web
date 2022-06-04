@@ -7,6 +7,7 @@ export type ProcessType = {
     defendant: string;
     decision: string;
     accountable: string;
+    instance?: string;
     themis_id?: number;
     deadline: DeadLineProcessType[];
     description_forward?:string;
