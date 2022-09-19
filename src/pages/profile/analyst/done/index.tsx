@@ -186,7 +186,6 @@ const AnalystDone: NextPage = () => {
             }
 
             updateProcessNumberFromThemis(result?.data?.id).then((result) => {
-                console.debug('updateProcessNumberFromThemis-result', result);
                 toast({
                     title: 'Processo',
                     description: 'Processo atualizado com as informações do Themis',
@@ -360,8 +359,8 @@ const AnalystDone: NextPage = () => {
                             />
                         </FormControl>
 
-                        {(editProcess?.deadline?.find(x=>x.deadline_interpreter == user?.uid)?.deadline_internal_date
-                        && editProcess?.deadline?.find(x=>x.deadline_interpreter == user?.uid)?.deadline_court_date) && (
+                        {(`${editProcess?.deadline?.find(x=>x.deadline_interpreter == user?.uid)?.deadline_internal_date}` != 'null'
+                            && `${editProcess?.deadline?.find(x=>x.deadline_interpreter == user?.uid)?.deadline_court_date}` != 'null') && (
                             <Alert status='info' variant='left-accent'>
                                 <AlertIcon />
                                 <Text
@@ -378,8 +377,8 @@ const AnalystDone: NextPage = () => {
                             </Alert>
                         )}
 
-                        {(editProcess?.deadline?.find(x=>x.deadline_interpreter == user?.uid)?.deadline_internal_date == null
-                            && editProcess?.deadline?.find(x=>x.deadline_interpreter == user?.uid)?.deadline_court_date == null) &&(
+                        {(`${editProcess?.deadline?.find(x=>x.deadline_interpreter == user?.uid)?.deadline_internal_date}` == 'null'
+                            && `${editProcess?.deadline?.find(x=>x.deadline_interpreter == user?.uid)?.deadline_court_date}` == 'null') &&(
                             <Alert status='info' variant='left-accent'>
                                 <AlertIcon />
                                 <Text
@@ -400,7 +399,7 @@ const AnalystDone: NextPage = () => {
                             </Text>
                         )}
 
-                        {editProcess?.date_final && (
+                        {`${editProcess?.date_final}` != 'null' && (
                             <Text
                                 fontSize={'0.8rem'}
                                 fontWeight={'bold'}

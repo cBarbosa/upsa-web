@@ -192,20 +192,20 @@ const AnalystWaiting: NextPage = () => {
         const _strInternalDate = `${item?.deadline?.find(x=>x.deadline_interpreter == user?.uid)?.deadline_internal_date}`;
         const _strCourtDate = `${item?.deadline?.find(x=>x.deadline_interpreter == user?.uid)?.deadline_court_date}`;
 
-        const _internalDate = _strInternalDate == 'null'
+        const _internalDate = _strInternalDate == 'null' || _strInternalDate == 'undefined'
             ? new Date()
             : new Date(parseInt(_strInternalDate.split('/')[2]), parseInt(_strInternalDate.split('/')[1])-1, parseInt(_strInternalDate.split('/')[0]));
-        const _courtDate = _strCourtDate == 'null'
+        const _courtDate = _strCourtDate == 'null' || _strCourtDate == 'undefined'
             ? new Date()
             : new Date(parseInt(_strCourtDate.split('/')[2]), parseInt(_strCourtDate.split('/')[1])-1, parseInt(_strCourtDate.split('/')[0]));
-
+    
         if((_strInternalDate != 'null' && _strCourtDate != 'null')
             && (_strInternalDate != 'undefined' && _strCourtDate != 'undefined')) {
             setIsCourtDeadline(true);
         }
 
-        setInternalDate(_strInternalDate != 'null' ? _internalDate : new Date());
-        setCourtDate(_strCourtDate != 'null' ? _courtDate : new Date());
+        setInternalDate(_strInternalDate != null ? _internalDate : new Date());
+        setCourtDate(_strCourtDate != null ? _courtDate : new Date());
         onOpen();
     };
 
@@ -263,13 +263,13 @@ const AnalystWaiting: NextPage = () => {
                     day: '2-digit'
                 }));
 
-                const _date1 = editProcess?.deadline[0].deadline_internal_date;
+                const _date1 = `${editProcess?.deadline[0].deadline_internal_date}`;
                 const _date2 = isCourtDeadline ? newInternalDate.toLocaleDateString('pt-BR',{
                     year: 'numeric',
                     month: '2-digit',
                     day: '2-digit'
                 }) : 'null';
-                const _court1 = editProcess?.deadline[0].deadline_court_date;
+                const _court1 = `${editProcess?.deadline[0].deadline_court_date}`;
                 const _court2 = isCourtDeadline ? newCourtDate.toLocaleDateString('pt-BR',{
                     year: 'numeric',
                     month: '2-digit',
@@ -387,10 +387,10 @@ const AnalystWaiting: NextPage = () => {
 
         const _mensagem = {
             'ProcessNumber': editProcess?.number,
-            'InternalDate1': _date1 ?? 'Sem Prazo',
-            'InternalDate2': _date2 ?? 'Sem Prazo',
-            'CourtDate1': _court1 ?? 'Sem Prazo',
-            'CourtDate2': _court2 ?? 'Sem Prazo',
+            'InternalDate1': _date1 == 'null' ? 'Sem Prazo' : _date1,
+            'InternalDate2': _date2 == 'null' ? 'Sem Prazo' : _date2,
+            'CourtDate1': _court1 == 'null' ? 'Sem Prazo' : _court1,
+            'CourtDate2': _court2 == 'null' ? 'Sem Prazo' : _court2,
             'Observation': editProcess?.decision
         };
 
@@ -465,13 +465,14 @@ const AnalystWaiting: NextPage = () => {
         }
 
         const _foward = {
-            "data": _internalDate ?? 'Sem Prazo',
-            "dataJudicial": _courtDate ?? 'Sem Prazo',
+            "data": _internalDate == 'null' ? 'Sem Prazo' : _internalDate,
+            "dataJudicial": _courtDate == 'null' ? 'Sem Prazo' : _courtDate,
             "descricao": editProcess?.decision,
             "advogado": {
                "id": themisAvocadoId
             }
         };
+
 
         api.put(`themis/process/add-foward/${editProcess?.number}`, _foward).then(result =>
         {

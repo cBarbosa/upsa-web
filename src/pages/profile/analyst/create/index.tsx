@@ -200,15 +200,12 @@ const AnalystCreate: NextPage = () => {
                 });
                 return;
             }
-            
-            const parteContrariaText = `${result?.data?.parteContraria?.nome} (${result?.data?.posicaoParte?.posPassiva === 'Autor' ? 'Autor' : 'Réu'})`;
-            const parteInteressadaText = `${result?.data?.parteInteressada?.nome} (${result?.data?.posicaoParte?.posAtiva === 'Autor' ? 'Autor' : 'Réu'})`;
 
             setThemisNumber(result?.data?.id);
             setProcessTitle(`${result?.data?.titulo} (${result?.data?.instancia?.nome})`);
             setProcessSummary(result?.data?.resumo);
-            setProcessAuthor(parteContrariaText);
-            setProcessDefendant(parteInteressadaText);
+            setProcessAuthor(result?.data?.parteContraria?.nome);
+            setProcessDefendant(result?.data?.parteInteressada?.nome);
             setInstance(result?.data?.instancia?.nome);
             onOpen();
         }).catch(function (error) {
