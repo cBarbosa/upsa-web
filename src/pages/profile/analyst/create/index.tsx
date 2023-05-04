@@ -395,7 +395,7 @@ const AnalystCreate: NextPage = () => {
                     <Box
                         background={'ButtonFace'}
                         rounded={5}
-                        align={'center'}
+                        alignSelf={'center'}
                         p={5}
                         hidden={!formVisible}
                     >
@@ -417,6 +417,7 @@ const AnalystCreate: NextPage = () => {
                 </Box>
 
             </Container>
+
             <BottomNav/>
 
             <Modal

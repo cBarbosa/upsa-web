@@ -29,7 +29,7 @@ const AuthContext = createContext<IAuthentication>({
     // getDbLoggedProfile: async () => new Promise<string>(() => '')
 });
 
-const AuthProvider: FC = ({ children }) => {
+const AuthProvider = ({ children }: React.PropsWithChildren ) => { // React.PropsWithChildren
     const [user, setUser] = useState<IUser | null>(null);
     const [role, setRole] = useState<string>('');
 
