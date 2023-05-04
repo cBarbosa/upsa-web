@@ -42,10 +42,10 @@ jobs:
         node-version: ${{ env.NODE_VERSION }}
 #        cache: 'npm'
 
-    - name: npm install, build, and test
+    - name: npm install, build, and not test
       run: |
         npm install
-        npm run build --legacy-peer-deps # if-present
+        npm run build
 #        npm run test --if-present
 
     - name: Upload artifact for deployment job
