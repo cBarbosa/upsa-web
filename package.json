@@ -2,7 +2,7 @@
   "name": "upsa-app",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "node server.js",
     "build": "next build",
     "start": "node server.js",
     "lint": "next lint"
