@@ -90,27 +90,116 @@ const ProcessListPage: NextPage = () => {
     }, []);
 
     const getProcess = async () => {
-        const processQuery = query(proccessCollection, where('active', '==', true));
-        const querySnapshot = await getDocs(processQuery);
+        // const processQuery = query(proccessCollection, where('active', '==', true));
+        // const querySnapshot = await getDocs(processQuery);
 
-        const result: ProcessType[] = [];
-        querySnapshot.forEach((snapshot) => {
-            result.push({
-                uid: snapshot.id,
-                number: snapshot.data().number,
-                author: snapshot.data().author,
-                defendant: snapshot.data().defendant,
-                decision: snapshot.data().decision,
-                instance: snapshot.data().instance,
-                accountable: snapshot.data().accountable,
-                deadline: snapshot.data().deadline,
-                created_at: snapshot.data().created_at,
-                updated_at: snapshot.data().updated_at,
-                active: snapshot.data().active,
-                date_final: snapshot.data().date_final
-            } as ProcessType);
+        const processQuery = await api.get('Process?size=9000')
+        .then(data => {
+            const querySnapshot: any[] = data.data.items;
+
+            const result: ProcessType[] = [];
+            querySnapshot.forEach((snapshot) => {
+
+                const itemUpdate = {
+                    // uid: snapshot.id,
+                    number: snapshot.number,
+                    author: snapshot.author,
+                    defendant: snapshot.defendant,
+                    decision: snapshot.decision,
+                    instance: snapshot.instance,
+                    accountable: snapshot.accountable,
+                    deadline: snapshot.deadline,
+                    created_At: snapshot.created_At,
+                    updated_At: snapshot.updated_At,
+                    active: snapshot.active,
+                    date_Final: snapshot.date_Final,
+                    themis_Id: snapshot.themis_Id,
+                } as ProcessType;
+                result.push(itemUpdate);
+                // insertProcessDB(itemUpdate);
+            });
+
+            setProcess(result);
         });
-        setProcess(result);
+        
+    };
+
+    const updateProcessDB = async (process: ProcessType) => {
+
+        const deadline1 = process.deadline[0] && {
+            deadline_interpreter: process.deadline[0].deadline_Interpreter,
+            deadline_court_date: process.deadline[0].deadline_Court_Date,
+            deadline_internal_date: process.deadline[0].deadline_Internal_Date,
+            checked: process.deadline[0].checked,
+            created_at: process.deadline[0].created_At
+        };
+
+        const deadline2 = process.deadline[1] && {
+            deadline_interpreter: process.deadline[1].deadline_Interpreter,
+            deadline_court_date: process.deadline[1].deadline_Court_Date,
+            deadline_internal_date: process.deadline[1].deadline_Internal_Date,
+            checked: process.deadline[1].checked,
+            created_at: process.deadline[1].created_At
+        };
+
+        const data = {
+            number: process.number,
+            author: process.author,
+            defendant: process.defendant,
+            decision: process.decision,
+            instance: process.instance,
+            accountable: process.accountable,
+            themis_id: process.themis_Id,
+            active: process.active,
+            date_final: process.date_Final,
+            created_at: process.created_At,
+            updated_at: process.updated_At,
+            deadline: [deadline1, deadline2]
+        };
+
+        const result = api.post(`Process/${process.uid}`, data)
+            .then(result => {
+                console.log(result);
+            });
+    };
+
+    const insertProcessDB = async (process: ProcessType) => {
+
+        const deadline1 = process.deadline[0] && {
+            deadline_interpreter: process.deadline[0].deadline_Interpreter,
+            deadline_court_date: process.deadline[0].deadline_Court_Date,
+            deadline_internal_date: process.deadline[0].deadline_Internal_Date,
+            checked: process.deadline[0].checked,
+            created_at: process.deadline[0].created_At
+        };
+
+        const deadline2 = process.deadline[1] && {
+            deadline_interpreter: process.deadline[1].deadline_Interpreter,
+            deadline_court_date: process.deadline[1].deadline_Court_Date,
+            deadline_internal_date: process.deadline[1].deadline_Internal_Date,
+            checked: process.deadline[1].checked,
+            created_at: process.deadline[1].created_At
+        };
+
+        const data = {
+            number: process.number,
+            author: process.author,
+            defendant: process.defendant,
+            decision: process.decision,
+            instance: process.instance,
+            accountable: process.accountable,
+            themis_id: process.themis_Id,
+            active: process.active,
+            date_final: process.date_Final,
+            created_at: process.created_At,
+            updated_at: process.updated_At,
+            deadline: [deadline1, deadline2]
+        };
+
+        const result = api.put(`Process/${process.uid}`, data)
+            .then(result => {
+                console.log(result);
+            });
     };
 
     const getAnalystList = async () => {
@@ -158,7 +247,7 @@ const ProcessListPage: NextPage = () => {
             defendant: processDefendant,
             decision: processDecision,
             active: true,
-            created_at: Timestamp.now()
+            created_At: new Date()
         } as ProcessType;
 
         const docRef = await addDoc(proccessCollection, dataProcess);
@@ -212,7 +301,7 @@ const ProcessListPage: NextPage = () => {
             console.log(error);
         });
 
-        setEditProcess({...item, ['updated_at']: Timestamp.now() });
+        setEditProcess({...item, ['updated_At']: new Date() });
         onOpenEdit();
     };
     
@@ -236,7 +325,7 @@ const ProcessListPage: NextPage = () => {
                 author: editProcess?.author,
                 defendant: editProcess?.defendant,
                 decision: editProcess?.decision,
-                updated_at: editProcess?.updated_at,
+                updated_at: editProcess?.updated_At,
                 //accountable: processDaysFinal > 0 ? user?.uid : null,
                 //date_final: prazoDefinitivo ?? null
             });
@@ -250,10 +339,10 @@ const ProcessListPage: NextPage = () => {
                     created_at: Timestamp.now()
                 };
 
-                if(editProcess?.deadline?.find(x=>x.deadline_interpreter == user?.uid))
+                if(editProcess?.deadline?.find(x=>x.deadline_Interpreter == user?.uid))
                 {
                     await updateDoc(_processRef, {
-                        deadline: arrayRemove(editProcess?.deadline?.find(x=>x.deadline_interpreter == user?.uid))
+                        deadline: arrayRemove(editProcess?.deadline?.find(x=>x.deadline_Interpreter == user?.uid))
                     });
                 }
         
@@ -367,7 +456,7 @@ const ProcessListPage: NextPage = () => {
                 number: proc.number,
                 author: proc.author,
                 defendant: proc.defendant,
-                created_at: proc.created_at.toDate().toLocaleDateString('pt-BR', {
+                created_at: new Date(proc.created_At).toLocaleDateString('pt-BR', {
                     year: 'numeric',
                     month: '2-digit',
                     day: '2-digit',
@@ -609,7 +698,7 @@ const ProcessListPage: NextPage = () => {
                         </FormControl>
 
                         {/* Permite a edição do analista */}
-                        {editProcess?.deadline?.find(x=>x.deadline_interpreter == user?.uid) && (!editProcess?.date_final) && (
+                        {editProcess?.deadline?.find(x=>x.deadline_Interpreter == user?.uid) && (!editProcess?.date_Final) && (
                             <FormControl>
                                 <FormLabel>Dias de prazo</FormLabel>
                                 <Input
@@ -618,7 +707,7 @@ const ProcessListPage: NextPage = () => {
                                     type={'number'}
                                     maxLength={3}
                                     onChange={(event) => {setPrazo(event.target.value != ''
-                                        ? new Date(new Date().setDate(editProcess?.created_at.toDate().getDate() + parseInt(event.target.value)))
+                                        ? new Date(new Date().setDate(editProcess?.created_At.getDate() + parseInt(event.target.value)))
                                         : new Date()); setProcessDays(parseInt(event.target.value)); }}
                                     value={processDays}
                                 />
@@ -666,7 +755,7 @@ const ProcessListPage: NextPage = () => {
                         {/* Permite ao analista inserir uma data de interpreteção */}
                         {role === 'analyst'
                             && (!editProcess?.deadline
-                            || editProcess?.deadline?.filter(x => x.deadline_interpreter == user?.uid).length == 0)
+                            || editProcess?.deadline?.filter(x => x.deadline_Interpreter == user?.uid).length == 0)
                             && (
                                 <FormControl>
                                     <FormLabel>Dias de prazo</FormLabel>
@@ -676,7 +765,7 @@ const ProcessListPage: NextPage = () => {
                                         type={'number'}
                                         maxLength={3}
                                         onChange={(event) => {setPrazo(event.target.value != ''
-                                            ? new Date(new Date().setDate((editProcess?.created_at.toDate() ?? new Date()).getDate() + parseInt(event.target.value)))
+                                            ? new Date(new Date().setDate((editProcess?.created_At ?? new Date()).getDate() + parseInt(event.target.value)))
                                             : new Date()); setProcessDays(parseInt(event.target.value)); }}
                                         value={processDays}
                                     />
@@ -732,81 +821,81 @@ const ProcessListPage: NextPage = () => {
                             </Text>
                         )}
 
-                        {editProcess?.date_final && (
+                        {editProcess?.date_Final && (
                             <Text
                                 fontSize={'0.8rem'}
                                 fontWeight={'bold'}
                                 color={'blue.300'}
                             >
-                                Data Final: {editProcess?.date_final != 'null' ? editProcess?.date_final : 'Sem Prazo'}
+                                Data Final: {editProcess?.date_Final != 'null' ? editProcess?.date_Final : 'Sem Prazo'}
                             </Text>
                         )}
 
-                        {editProcess?.deadline[0]?.deadline_internal_date && (
+                        {editProcess?.deadline[0]?.deadline_Internal_Date && (
                             <Text
                                 fontSize={'0.8rem'}
                                 color={'blue.300'}
                             >
-                                Data Interna {editProcess?.deadline[0]?.deadline_internal_date} por {analystList.find(x => x.uid == editProcess?.deadline[0]?.deadline_interpreter)?.displayName}
+                                Data Interna {editProcess?.deadline[0]?.deadline_Internal_Date} por {analystList.find(x => x.uid == editProcess?.deadline[0]?.deadline_Interpreter)?.displayName}
                             </Text>
                         )}
-                        {editProcess?.deadline[0]?.deadline_internal_date == null && (
+                        {editProcess?.deadline[0]?.deadline_Internal_Date == null && (
                             <Text
                                 fontSize={'0.8rem'}
                                 color={'blue.300'}
                             >
-                                Data Interna 'Sem Prazo', por {analystList.find(x => x.uid == editProcess?.deadline[0]?.deadline_interpreter)?.displayName}
-                            </Text>
-                        )}
-
-                        {editProcess?.deadline[1]?.deadline_internal_date && (
-                            <Text
-                                fontSize={'0.8rem'}
-                                color={'blue.300'}
-                            >
-                                Data Interna {editProcess?.deadline[1]?.deadline_internal_date} por {analystList.find(x => x.uid == editProcess?.deadline[1]?.deadline_interpreter)?.displayName}
-                            </Text>
-                        )}
-                        {editProcess?.deadline[1]?.deadline_internal_date == null && (
-                            <Text
-                                fontSize={'0.8rem'}
-                                color={'blue.300'}
-                            >
-                                Data Interna 'Sem Prazo', por {analystList.find(x => x.uid == editProcess?.deadline[1]?.deadline_interpreter)?.displayName}
+                                Data Interna 'Sem Prazo', por {analystList.find(x => x.uid == editProcess?.deadline[0]?.deadline_Interpreter)?.displayName}
                             </Text>
                         )}
 
-                        {editProcess?.deadline[0]?.deadline_court_date && (
+                        {editProcess?.deadline[1]?.deadline_Internal_Date && (
                             <Text
                                 fontSize={'0.8rem'}
                                 color={'blue.300'}
                             >
-                                Data Judicial {editProcess?.deadline[0]?.deadline_court_date} por {analystList.find(x => x.uid == editProcess?.deadline[0]?.deadline_interpreter)?.displayName}
+                                Data Interna {editProcess?.deadline[1]?.deadline_Internal_Date} por {analystList.find(x => x.uid == editProcess?.deadline[1]?.deadline_Interpreter)?.displayName}
                             </Text>
                         )}
-                        {editProcess?.deadline[0]?.deadline_court_date == null && (
+                        {editProcess?.deadline[1]?.deadline_Internal_Date == null && (
                             <Text
                                 fontSize={'0.8rem'}
                                 color={'blue.300'}
                             >
-                                Data Judicial 'Sem Prazo', por {analystList.find(x => x.uid == editProcess?.deadline[0]?.deadline_interpreter)?.displayName}
+                                Data Interna 'Sem Prazo', por {analystList.find(x => x.uid == editProcess?.deadline[1]?.deadline_Interpreter)?.displayName}
                             </Text>
                         )}
 
-                        {editProcess?.deadline[1]?.deadline_court_date && (
+                        {editProcess?.deadline[0]?.deadline_Court_Date && (
                             <Text
                                 fontSize={'0.8rem'}
                                 color={'blue.300'}
                             >
-                                Data Judicial {editProcess?.deadline[1]?.deadline_court_date} por {analystList.find(x => x.uid == editProcess?.deadline[1]?.deadline_interpreter)?.displayName}
+                                Data Judicial {editProcess?.deadline[0]?.deadline_Court_Date} por {analystList.find(x => x.uid == editProcess?.deadline[0]?.deadline_Interpreter)?.displayName}
                             </Text>
                         )}
-                        {editProcess?.deadline[1]?.deadline_court_date == null && (
+                        {editProcess?.deadline[0]?.deadline_Court_Date == null && (
                             <Text
                                 fontSize={'0.8rem'}
                                 color={'blue.300'}
                             >
-                                Data Judicial 'Sem Prazo', por {analystList.find(x => x.uid == editProcess?.deadline[1]?.deadline_interpreter)?.displayName}
+                                Data Judicial 'Sem Prazo', por {analystList.find(x => x.uid == editProcess?.deadline[0]?.deadline_Interpreter)?.displayName}
+                            </Text>
+                        )}
+
+                        {editProcess?.deadline[1]?.deadline_Court_Date && (
+                            <Text
+                                fontSize={'0.8rem'}
+                                color={'blue.300'}
+                            >
+                                Data Judicial {editProcess?.deadline[1]?.deadline_Court_Date} por {analystList.find(x => x.uid == editProcess?.deadline[1]?.deadline_Interpreter)?.displayName}
+                            </Text>
+                        )}
+                        {editProcess?.deadline[1]?.deadline_Court_Date == null && (
+                            <Text
+                                fontSize={'0.8rem'}
+                                color={'blue.300'}
+                            >
+                                Data Judicial 'Sem Prazo', por {analystList.find(x => x.uid == editProcess?.deadline[1]?.deadline_Interpreter)?.displayName}
                             </Text>
                         )}
 
@@ -814,7 +903,7 @@ const ProcessListPage: NextPage = () => {
                             fontSize={'0.6rem'}
                             fontWeight={'bold'}
                         >
-                            Criado em: {editProcess?.created_at?.toDate().toLocaleDateString('pt-BR', {
+                            Criado em: {new Date(editProcess?.created_At ?? new Date())?.toLocaleDateString('pt-BR', {
                                 year: 'numeric',
                                 month: '2-digit',
                                 day: '2-digit',
@@ -823,12 +912,12 @@ const ProcessListPage: NextPage = () => {
                             })}
                         </Text>
 
-                        {editProcess?.updated_at && (
+                        {editProcess?.updated_At && (
                             <Text
                                 fontSize={'0.6rem'}
                                 fontWeight={'bold'}
                             >
-                                Atualizado em: {editProcess?.updated_at?.toDate().toLocaleDateString('pt-BR', {
+                                Atualizado em: {new Date(editProcess?.updated_At ?? new Date())?.toLocaleDateString('pt-BR', {
                                     year: 'numeric',
                                     month: '2-digit',
                                     day: '2-digit',

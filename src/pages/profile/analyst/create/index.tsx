@@ -49,7 +49,7 @@ import { Search2Icon, SearchIcon } from "@chakra-ui/icons";
 
 const AnalystCreate: NextPage = () => {
     const database = db;
-    const proccessCollection = collection(database, 'proccess');
+    // const proccessCollection = collection(database, 'proccess');
     const toast = useToast();
     const {isAuthenticated, role, user} = useAuth();
     const [themisNumber, setThemisNumber] = useState<number | null>(null);
@@ -147,19 +147,19 @@ const AnalystCreate: NextPage = () => {
         }
 
         const dataProcessNode1 = {
-            deadline_internal_date: isCourtDeadline ? internalDate.toLocaleDateString('pt-BR', {
+            deadline_Internal_Date: isCourtDeadline ? internalDate.toLocaleDateString('pt-BR', {
                 year: 'numeric',
                 month: '2-digit',
                 day: '2-digit'
             }) : null,
-            deadline_court_date: isCourtDeadline ? courtDate.toLocaleDateString('pt-BR',{
+            deadline_Court_Date: isCourtDeadline ? courtDate.toLocaleDateString('pt-BR',{
                 year: 'numeric',
                 month: '2-digit',
                 day: '2-digit'
             }) : null,
-            deadline_interpreter: user?.uid,
+            deadline_Interpreter: user?.uid,
             checked: false,
-            created_at: Timestamp.now()
+            created_At: new Date()
         };
 
         const dataProcess = {
@@ -169,12 +169,16 @@ const AnalystCreate: NextPage = () => {
             decision: processDecision,
             instance: instance,
             active: true,
-            themis_id: themisNumber,
+            themis_Id: themisNumber,
             deadline: [dataProcessNode1],
-            created_at: Timestamp.now()
+            created_At: new Date()
         } as ProcessType;
 
-        const docRef = await addDoc(proccessCollection, dataProcess);
+        // const docRef = await addDoc(proccessCollection, dataProcess);
+        const docRef = api.put(`Process/${genUniqueId()}`, dataProcess)
+            .then(result => {
+                console.log(result);
+            });
 
         toast({
             title: 'Processo',
@@ -214,37 +218,65 @@ const AnalystCreate: NextPage = () => {
     }
 
     const _handleAddDeadLine = async () => {
-        const snapProcess =  await getDocs(query(proccessCollection,
-            where('number', '==', processNumber)));
+        // const snapProcess =  await getDocs(query(proccessCollection,
+        //     where('number', '==', processNumber)));
 
-        if(snapProcess.empty) {
-            setFormVisible(true);
-            return;
-        }
+        const snapProcess = await api.get(`Process/${processNumber}/number`)
+            .then(result => {
+                
+                if(!result.data.success) {
+                    toast({
+                        title: 'Processo',
+                        description: result.data.message,
+                        status: 'error',
+                        duration: 9000,
+                        isClosable: true,
+                    });
+                    return;
+                }
 
-        let hasPendingDistribuition = false;
-        snapProcess.forEach((snapshot) => {
-            const data = (snapshot.data() as ProcessType);
+                if(!result.data.data) {
+                    setFormVisible(true);
+                    return;
+                }
 
-            const hasNoDateFinal = !data.date_final;
-            const hasNoAccountable = !data.accountable;
+                let hasPendingDistribuition = false;
 
-            if(hasNoDateFinal && hasNoAccountable)
-                hasPendingDistribuition = true;
-        });
+                const items = result.data?.data as ProcessType[];
+                
+                items.forEach((snapshot) => {
+                    const hasNoDateFinal = !snapshot.date_Final;
+                    const hasNoAccountable = !snapshot.accountable;
 
-        if(hasPendingDistribuition) {
-            toast({
-                title: 'Processo',
-                description: 'Já existe uma distribuição pendente para este processo',
-                status: 'error',
-                duration: 9000,
-                isClosable: true,
+                    if(hasNoDateFinal && hasNoAccountable)
+                        hasPendingDistribuition = true;
+                });
+
+                if(hasPendingDistribuition) {
+                    toast({
+                        title: 'Processo',
+                        description: 'Já existe uma distribuição pendente para este processo',
+                        status: 'error',
+                        duration: 9000,
+                        isClosable: true,
+                    });
+                    return;
+                }
+                setFormVisible(true);
             });
-            return;
-        }
+    };
 
-        setFormVisible(true);
+    const genUniqueId = ():string => {
+        const dateStr = Date
+          .now()
+          .toString(36); // convert num to base 36 and stringify
+      
+        const randomStr = Math
+          .random()
+          .toString(36)
+          .substring(2, 8); // start at index 2 to skip decimal point
+      
+        return `${dateStr}${randomStr}`;
     };
 
     return (
