@@ -59,7 +59,7 @@ import {
 import { parseCookies } from 'nookies';
 import { useRouter } from 'next/router';
 import { SingleDatepicker } from 'chakra-dayzed-datepicker';
-import { api, api2 } from '../../../../services/api';
+import { api } from '../../../../services/api';
 import { DeadLineProcessType, ProcessType } from '../../../../models/ThemisTypes';
 import { UserType } from '../../../../models/FirebaseTypes';
 
@@ -398,7 +398,7 @@ const AnalystWaiting: NextPage = () => {
 
     const _handleGetProcessOnThemis = async (processNumber:string) => {
 
-        api2.get(`themis/process/${processNumber}`).then(result => {
+        api.get(`themis/process/${processNumber}`).then(result => {
             
             if(result.status === 204) {
                 return false;

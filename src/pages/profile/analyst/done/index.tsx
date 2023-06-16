@@ -49,7 +49,7 @@ import {
     RepeatIcon
 } from "@chakra-ui/icons";
 import InputMask from 'react-input-mask';
-import { api, api2 } from "../../../../services/api";
+import { api } from "../../../../services/api";
 import { ProcessType } from '../../../../models/ThemisTypes';
 import { UserType } from '../../../../models/FirebaseTypes';
 
@@ -189,7 +189,7 @@ const AnalystDone: NextPage = () => {
     };
 
     const _handleGetProcessOnThemis = async (processNumber:string) => {
-        return api2.get(`themis/process/${processNumber}`).then(result => {
+        return api.get(`themis/process/${processNumber}`).then(result => {
             if(result.status === 204) {
                 return -1;
             }

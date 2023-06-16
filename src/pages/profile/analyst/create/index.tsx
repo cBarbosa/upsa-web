@@ -33,7 +33,7 @@ import {
 import InputMask from 'react-input-mask';
 import React, { useEffect, useState } from 'react';
 import { SingleDatepicker } from 'chakra-dayzed-datepicker';
-import { api, api2 } from "../../../../services/api";
+import { api } from "../../../../services/api";
 import {
     addDoc,
     collection,
@@ -192,7 +192,7 @@ const AnalystCreate: NextPage = () => {
 
     const _handleGetProcessOnThemis = async (processNumber:string) => {
 
-        api2.get(`themis/process/${processNumber}`).then(result => {
+        api.get(`themis/process/${processNumber}`).then(result => {
             
             if(result.status === 204) {
                 toast({

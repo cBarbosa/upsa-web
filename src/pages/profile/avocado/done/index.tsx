@@ -51,12 +51,13 @@ import {
 import InputMask from 'react-input-mask';
 import { ProcessType } from '../../../../models/ThemisTypes';
 import { UserType } from '../../../../models/FirebaseTypes';
+import { api } from "../../../../services/api";
 
 const AvocadoDone: NextPage = () => {
 
     const {isAuthenticated, role, user} = useAuth();
     const database = db;
-    const proccessCollection = collection(database, 'proccess');
+    // const proccessCollection = collection(database, 'proccess');
     const {['upsa.role']: upsaRole} = parseCookies(null);
     const route = useRouter();
     const [processList, setProcessList] = useState<ProcessType[]>([]);
@@ -77,36 +78,30 @@ const AvocadoDone: NextPage = () => {
     }, []);
 
     const getProcessList = async () => {
-        const processQuery = query(proccessCollection, where('active', '==', true), where('accountable', '==', user?.uid));
-        const querySnapshot = await getDocs(processQuery);
+        // const processQuery = query(proccessCollection, where('active', '==', true), where('accountable', '==', user?.uid));
+        // const querySnapshot = await getDocs(processQuery);
 
-        const result:ProcessType[] = [];
-        querySnapshot.forEach((snapshot) => {
-            const data = (snapshot.data() as ProcessType);
-            // const hasNoInternalDateDivergency = data?.deadline?.every((val, i, arr) => val.deadline_internal_date === arr[0].deadline_internal_date);
-            // const hasNoCourtDateDivergency = data?.deadline?.every((val, i, arr) => val.deadline_court_date === arr[0].deadline_court_date);
-            const hasTwoDeadlines = data?.deadline?.length == 2;
-            const isAlreadyResolved = !!data.date_final;
+        const processQuery = await api.get(`Process?size=9000`).then(processos => {
+            
+            const querySnapshot:ProcessType[] = (processos.data.items as ProcessType[]).filter(item => item.accountable == user?.uid);
+            let result: ProcessType[] = [];
 
-            if(hasTwoDeadlines && isAlreadyResolved) {
-                result.push({
-                    uid: snapshot.id,
-                    number: snapshot.data().number,
-                    author: snapshot.data().author,
-                    defendant: snapshot.data().defendant,
-                    decision: snapshot.data().decision,
-                    instance: snapshot.data().instance,
-                    accountable: snapshot.data().accountable,
-                    deadline: snapshot.data().deadline,
-                    themis_id: snapshot.data().themis_id,
-                    date_final: snapshot.data().date_final,
-                    created_at: snapshot.data().created_at,
-                    updated_at: snapshot.data().updated_at,
-                    active: snapshot.data().active
-                });
-            }
+            querySnapshot.forEach(snapshot => {
+
+                const hasTwoDeadlines = snapshot?.deadline?.length == 2;
+                const isAlreadyResolved = !!snapshot.date_Final;
+
+            if(hasTwoDeadlines
+                && (hasTwoDeadlines && isAlreadyResolved)) {
+                    result.push(snapshot);
+                }
+            });
+
+            setProcessList(result);
+        }).catch(function (error) {
+            console.error(error);
         });
-        setProcessList(result);
+
     };
 
     const getAvocadoList = async () => {
@@ -157,7 +152,7 @@ const AvocadoDone: NextPage = () => {
                 number: proc.number,
                 author: proc.author,
                 defendant: proc.defendant,
-                created_at: proc.created_at.toDate().toLocaleDateString('pt-BR', {
+                created_at: new Date(proc.created_At).toLocaleDateString('pt-BR', {
                     year: 'numeric',
                     month: '2-digit',
                     day: '2-digit',
@@ -171,7 +166,7 @@ const AvocadoDone: NextPage = () => {
     }
 
     const _handleEditProcess = async (item: ProcessType) => {
-        setEditProcess({...item, ['updated_at']: Timestamp.now() });
+        setEditProcess({...item, ['updated_At']: new Date() });
         onOpen();
     };
 
@@ -254,9 +249,9 @@ const AvocadoDone: NextPage = () => {
 
                         <Flex>
                         <FormControl>
-                            {editProcess?.themis_id && (
+                            {editProcess?.themis_Id && (
                                 <Text>
-                                    #{editProcess?.themis_id}
+                                    #{editProcess?.themis_Id}
                                 </Text>
                             )}
                             <FormLabel>Numero do processo</FormLabel>
@@ -311,7 +306,7 @@ const AvocadoDone: NextPage = () => {
                                     Data Judicial Final
                                 </AlertTitle>
                                 <AlertDescription display='block'>
-                                    {editProcess?.date_final != 'null' ? editProcess?.date_final : 'Definido sem prazo'}
+                                    {editProcess?.date_Final != 'null' ? editProcess?.date_Final : 'Definido sem prazo'}
                                 </AlertDescription>
                             </Box>
                         </Alert>
@@ -344,71 +339,71 @@ const AvocadoDone: NextPage = () => {
                             </Text>
                         )}
 
-                        {`${editProcess?.deadline[0]?.deadline_internal_date}` != 'null' && (
+                        {`${editProcess?.deadline[0]?.deadline_Internal_Date}` != 'null' && (
                             <Text
                                 fontSize={'0.8rem'}
                                 color={'blue.300'}
                             >
-                                Data Interna {editProcess?.deadline[0]?.deadline_internal_date} por {avocadoList.find(x => x.uid == editProcess?.deadline[0]?.deadline_interpreter)?.displayName}
+                                Data Interna {editProcess?.deadline[0]?.deadline_Internal_Date} por {avocadoList.find(x => x.uid == editProcess?.deadline[0]?.deadline_Interpreter)?.displayName}
                             </Text>
                         )}
-                        {`${editProcess?.deadline[0]?.deadline_internal_date}` == 'null' && (
+                        {`${editProcess?.deadline[0]?.deadline_Internal_Date}` == 'null' && (
                             <Text
                                 fontSize={'0.8rem'}
                                 color={'blue.300'}
                             >
-                                Data Interna 'Sem Prazo', por {avocadoList.find(x => x.uid == editProcess?.deadline[0]?.deadline_interpreter)?.displayName}
-                            </Text>
-                        )}
-
-                        {`${editProcess?.deadline[1]?.deadline_internal_date}` != 'null' && (
-                            <Text
-                                fontSize={'0.8rem'}
-                                color={'blue.300'}
-                            >
-                                Data Interna {editProcess?.deadline[1]?.deadline_internal_date} por {avocadoList.find(x => x.uid == editProcess?.deadline[1]?.deadline_interpreter)?.displayName}
-                            </Text>
-                        )}
-                        {`${editProcess?.deadline[1]?.deadline_internal_date}` == 'null' && (
-                            <Text
-                                fontSize={'0.8rem'}
-                                color={'blue.300'}
-                            >
-                                Data Interna 'Sem Prazo', por {avocadoList.find(x => x.uid == editProcess?.deadline[1]?.deadline_interpreter)?.displayName}
+                                Data Interna 'Sem Prazo', por {avocadoList.find(x => x.uid == editProcess?.deadline[0]?.deadline_Interpreter)?.displayName}
                             </Text>
                         )}
 
-                        {`${editProcess?.deadline[0]?.deadline_court_date}` != 'null' && (
+                        {`${editProcess?.deadline[1]?.deadline_Internal_Date}` != 'null' && (
                             <Text
                                 fontSize={'0.8rem'}
                                 color={'blue.300'}
                             >
-                                Data Judicial {editProcess?.deadline[0]?.deadline_court_date} por {avocadoList.find(x => x.uid == editProcess?.deadline[0]?.deadline_interpreter)?.displayName}
+                                Data Interna {editProcess?.deadline[1]?.deadline_Internal_Date} por {avocadoList.find(x => x.uid == editProcess?.deadline[1]?.deadline_Interpreter)?.displayName}
                             </Text>
                         )}
-                        {`${editProcess?.deadline[0]?.deadline_court_date}` == 'null' && (
+                        {`${editProcess?.deadline[1]?.deadline_Internal_Date}` == 'null' && (
                             <Text
                                 fontSize={'0.8rem'}
                                 color={'blue.300'}
                             >
-                                Data Judicial 'Sem Prazo', por {avocadoList.find(x => x.uid == editProcess?.deadline[0]?.deadline_interpreter)?.displayName}
+                                Data Interna 'Sem Prazo', por {avocadoList.find(x => x.uid == editProcess?.deadline[1]?.deadline_Interpreter)?.displayName}
                             </Text>
                         )}
 
-                        {`${editProcess?.deadline[1]?.deadline_court_date}` != 'null' && (
+                        {`${editProcess?.deadline[0]?.deadline_Court_Date}` != 'null' && (
                             <Text
                                 fontSize={'0.8rem'}
                                 color={'blue.300'}
                             >
-                                Data Judicial {editProcess?.deadline[1]?.deadline_court_date} por {avocadoList.find(x => x.uid == editProcess?.deadline[1]?.deadline_interpreter)?.displayName}
+                                Data Judicial {editProcess?.deadline[0]?.deadline_Court_Date} por {avocadoList.find(x => x.uid == editProcess?.deadline[0]?.deadline_Interpreter)?.displayName}
                             </Text>
                         )}
-                        {`${editProcess?.deadline[1]?.deadline_court_date}` == 'null' && (
+                        {`${editProcess?.deadline[0]?.deadline_Court_Date}` == 'null' && (
                             <Text
                                 fontSize={'0.8rem'}
                                 color={'blue.300'}
                             >
-                                Data Judicial 'Sem Prazo', por {avocadoList.find(x => x.uid == editProcess?.deadline[1]?.deadline_interpreter)?.displayName}
+                                Data Judicial 'Sem Prazo', por {avocadoList.find(x => x.uid == editProcess?.deadline[0]?.deadline_Interpreter)?.displayName}
+                            </Text>
+                        )}
+
+                        {`${editProcess?.deadline[1]?.deadline_Court_Date}` != 'null' && (
+                            <Text
+                                fontSize={'0.8rem'}
+                                color={'blue.300'}
+                            >
+                                Data Judicial {editProcess?.deadline[1]?.deadline_Court_Date} por {avocadoList.find(x => x.uid == editProcess?.deadline[1]?.deadline_Interpreter)?.displayName}
+                            </Text>
+                        )}
+                        {`${editProcess?.deadline[1]?.deadline_Court_Date}` == 'null' && (
+                            <Text
+                                fontSize={'0.8rem'}
+                                color={'blue.300'}
+                            >
+                                Data Judicial 'Sem Prazo', por {avocadoList.find(x => x.uid == editProcess?.deadline[1]?.deadline_Interpreter)?.displayName}
                             </Text>
                         )}
 
@@ -416,7 +411,7 @@ const AvocadoDone: NextPage = () => {
                             fontSize={'0.rem'}
                             fontWeight={'bold'}
                         >
-                            Criado em: {editProcess?.created_at?.toDate().toLocaleDateString('pt-BR', {
+                            Criado em: {new Date(editProcess?.created_At ?? new Date())?.toLocaleDateString('pt-BR', {
                                 year: 'numeric',
                                 month: '2-digit',
                                 day: '2-digit',
@@ -425,12 +420,12 @@ const AvocadoDone: NextPage = () => {
                             })}
                         </Text>
 
-                        {editProcess?.updated_at && (
+                        {editProcess?.updated_At && (
                             <Text
                                 fontSize={'0.6rem'}
                                 fontWeight={'bold'}
                             >
-                                Atualizado em: {editProcess?.updated_at?.toDate().toLocaleDateString('pt-BR', {
+                                Atualizado em: {new Date(editProcess?.updated_At ?? new Date())?.toLocaleDateString('pt-BR', {
                                     year: 'numeric',
                                     month: '2-digit',
                                     day: '2-digit',
