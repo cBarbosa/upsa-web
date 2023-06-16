@@ -59,15 +59,15 @@ import {
 import { parseCookies } from 'nookies';
 import { useRouter } from 'next/router';
 import { SingleDatepicker } from 'chakra-dayzed-datepicker';
-import { api } from '../../../../services/api';
-import { ProcessType } from '../../../../models/ThemisTypes';
+import { api, api2 } from '../../../../services/api';
+import { DeadLineProcessType, ProcessType } from '../../../../models/ThemisTypes';
 import { UserType } from '../../../../models/FirebaseTypes';
 
 const AnalystWaiting: NextPage = () => {
     const toast = useToast();
     const route = useRouter();
     const database = db;
-    const proccessCollection = collection(database, 'proccess');
+    // const proccessCollection = collection(database, 'proccess');
     const { isAuthenticated, role, user } = useAuth();
     const [processList, setProcessList] = useState<ProcessType[]>([]);
     const [avocadoList, setAvocadoList] = useState<UserType[]>([]);
@@ -92,37 +92,30 @@ const AnalystWaiting: NextPage = () => {
     }, []);
 
     const getProcessList = async () => {
-        const processQuery = query(proccessCollection, where('active', '==', true));
-        const querySnapshot = await getDocs(processQuery);
+        // const processQuery = query(proccessCollection, where('active', '==', true));
+        // const querySnapshot = await getDocs(processQuery);
 
-        const result:ProcessType[] = [];
-        querySnapshot.forEach((snapshot) => {
+        const processQuery = await api.get(`Process?size=9000`).then(processos => {
+            
+            const querySnapshot:ProcessType[] = processos.data.items;
+            let result: ProcessType[] = [];
 
-            const hasAccountability = (snapshot.data() as ProcessType)?.deadline?.some(x => x.deadline_interpreter == user?.uid);
-            const hasJustOneDeadline = (snapshot.data() as ProcessType)?.deadline?.length == 1;
-            const hasTwoDeadlines = (snapshot.data() as ProcessType)?.deadline?.length == 2;
+            querySnapshot.forEach(snapshot => {
 
-            if(!hasTwoDeadlines
-                && (hasAccountability || (!hasAccountability && hasJustOneDeadline)))
-            {
-                result.push({
-                    uid: snapshot.id,
-                    number: snapshot.data().number,
-                    author: snapshot.data().author,
-                    defendant: snapshot.data().defendant,
-                    decision: snapshot.data().decision,
-                    accountable: snapshot.data().accountable,
-                    instance: snapshot.data().instance,
-                    deadline: snapshot.data().deadline,
-                    themis_id: snapshot.data().themis_id,
-                    date_final: snapshot.data().date_final,
-                    created_at: snapshot.data().created_at,
-                    updated_at: snapshot.data().updated_at,
-                    active: snapshot.data().active
-                });
-            }
+                const hasAccountability = snapshot?.deadline?.some(x => x.deadline_Interpreter == user?.uid);
+                const hasJustOneDeadline = snapshot?.deadline?.length == 1;
+                const hasTwoDeadlines = snapshot?.deadline?.length == 2;
+
+                if(!hasTwoDeadlines
+                    && (hasAccountability || (!hasAccountability && hasJustOneDeadline))) {
+                    result.push(snapshot);
+                }
+            });
+
+            setProcessList(result);
+        }).catch(function (error) {
+            console.error(error);
         });
-        setProcessList(result);
     };
 
     const getAvocadoList = async () => {
@@ -159,7 +152,7 @@ const AnalystWaiting: NextPage = () => {
                 number: proc.number,
                 author: proc.author,
                 defendant: proc.defendant,
-                created_at: proc.created_at.toDate().toLocaleDateString('pt-BR', {
+                created_at: new Date(proc.created_At).toLocaleDateString('pt-BR', {
                     year: 'numeric',
                     month: '2-digit',
                     day: '2-digit',
@@ -188,9 +181,9 @@ const AnalystWaiting: NextPage = () => {
 
     const _handleEditProcess = async (item: ProcessType) => {
         setIsCourtDeadline(false);
-        setEditProcess({...item, ['updated_at']: Timestamp.now() });
-        const _strInternalDate = `${item?.deadline?.find(x=>x.deadline_interpreter == user?.uid)?.deadline_internal_date}`;
-        const _strCourtDate = `${item?.deadline?.find(x=>x.deadline_interpreter == user?.uid)?.deadline_court_date}`;
+        setEditProcess({...item, ['updated_At']: new Date() });
+        const _strInternalDate = `${item?.deadline?.find(x=>x.deadline_Interpreter == user?.uid)?.deadline_Internal_Date}`;
+        const _strCourtDate = `${item?.deadline?.find(x=>x.deadline_Interpreter == user?.uid)?.deadline_Court_Date}`;
 
         const _internalDate = _strInternalDate == 'null' || _strInternalDate == 'undefined'
             ? new Date()
@@ -212,8 +205,10 @@ const AnalystWaiting: NextPage = () => {
     const _handleUpdateProcess = async () => {
 
         try {
-            const _processRef = doc(db, `proccess/${editProcess?.uid}`);
-            const _nodeProcessRef = editProcess?.deadline?.find(x=>x.deadline_interpreter == user?.uid);
+            // const _processRef = doc(db, `proccess/${editProcess?.uid}`);
+            
+            const _nodeProcessRef = editProcess?.deadline
+                                ?.find(x=>x.deadline_Interpreter == user?.uid);
 
             {/* Distribuição de processo */}
             if(!_nodeProcessRef) {
@@ -251,25 +246,25 @@ const AnalystWaiting: NextPage = () => {
                     return;
                 }
 
-                let _internalDate = editProcess?.deadline[0].deadline_internal_date == (!isCourtDeadline ? null : newInternalDate.toLocaleDateString('pt-BR',{
+                let _internalDate = editProcess?.deadline[0].deadline_Internal_Date == (!isCourtDeadline ? null : newInternalDate.toLocaleDateString('pt-BR',{
                     year: 'numeric',
                     month: '2-digit',
                     day: '2-digit'
                 }));
 
-                let _courtDate = editProcess?.deadline[0].deadline_court_date == (!isCourtDeadline ? null : newCourtDate.toLocaleDateString('pt-BR',{
+                let _courtDate = editProcess?.deadline[0].deadline_Court_Date == (!isCourtDeadline ? null : newCourtDate.toLocaleDateString('pt-BR',{
                     year: 'numeric',
                     month: '2-digit',
                     day: '2-digit'
                 }));
 
-                const _date1 = `${editProcess?.deadline[0].deadline_internal_date}`;
+                const _date1 = `${editProcess?.deadline[0].deadline_Internal_Date}`;
                 const _date2 = isCourtDeadline ? newInternalDate.toLocaleDateString('pt-BR',{
                     year: 'numeric',
                     month: '2-digit',
                     day: '2-digit'
                 }) : 'null';
-                const _court1 = `${editProcess?.deadline[0].deadline_court_date}`;
+                const _court1 = `${editProcess?.deadline[0].deadline_Court_Date}`;
                 const _court2 = isCourtDeadline ? newCourtDate.toLocaleDateString('pt-BR',{
                     year: 'numeric',
                     month: '2-digit',
@@ -294,77 +289,68 @@ const AnalystWaiting: NextPage = () => {
                 }
 
                 const dataProcessNode2 = {
-                    deadline_internal_date: _date2,
-                    deadline_court_date: _court2,
-                    deadline_interpreter: user?.uid,
+                    deadline_Internal_Date: _date2,
+                    deadline_Court_Date: _court2,
+                    deadline_Interpreter: user?.uid,
                     checked: false,
-                    created_at: Timestamp.now()
-                };
+                    created_At: new Date()
+                } as DeadLineProcessType;
 
-                const result = await updateDoc(_processRef, {
-                    author: editProcess?.author,
-                    defendant: editProcess?.defendant,
-                    decision: editProcess?.decision,
-                    updated_at: editProcess?.updated_at,
-                    accountable: editProcess?.accountable ?? null,
-                    date_final: (_date1 == _date2 && _court1 == _court2) ? _court1 : null,
-                    deadline: arrayUnion(dataProcessNode2)
-                });
+                editProcess.deadline.push(dataProcessNode2);
 
-                toast({
-                    title: 'Processo',
-                    description: 'Processo distribuído com sucesso',
-                    status: 'success',
-                    duration: 9000,
-                    isClosable: true,
+                const result = await api.post(`Process/${editProcess.uid}`, editProcess).then(update => {
+                    toast({
+                        title: 'Processo',
+                        description: update.data.message,
+                        status: 'success',
+                        duration: 9000,
+                        isClosable: true,
+                    });
+                }).catch(function (error) {
+                    console.error(error);
                 });
             } else { {/* Atualização do processo */}
 
-                    const dataProcessNode1 = {
-                    deadline_internal_date: isCourtDeadline ? internalDate.toLocaleDateString('pt-BR',{
+                const dataProcessNode1 = {
+                    deadline_Internal_Date: isCourtDeadline ? internalDate.toLocaleDateString('pt-BR',{
                         year: 'numeric',
                         month: '2-digit',
                         day: '2-digit'
                     }) : null,
-                    deadline_court_date: isCourtDeadline ? courtDate.toLocaleDateString('pt-BR',{
+                    deadline_Court_Date: isCourtDeadline ? courtDate.toLocaleDateString('pt-BR',{
                         year: 'numeric',
                         month: '2-digit',
                         day: '2-digit'
                     }) : null,
-                    deadline_interpreter: user?.uid,
+                    deadline_Interpreter: user?.uid,
                     checked: false,
-                    created_at: _nodeProcessRef?.created_at ?? Timestamp.now(),
-                    updated_at: Timestamp.now()
-                };
+                    created_At: _nodeProcessRef?.created_At ?? new Date(),
+                    updated_At: new Date()
+                } as DeadLineProcessType;
+
+                const index = editProcess!.deadline
+                                .findIndex(d => d.deadline_Interpreter == user?.uid);
+
+                editProcess?.deadline.splice(index, 1);
+                editProcess?.deadline.push(dataProcessNode1);
     
-                if(_nodeProcessRef)
-                {
-                    await updateDoc(_processRef, {
-                        deadline: arrayRemove(_nodeProcessRef)
+                const result = await api.post(`Process/${editProcess?.uid}`, editProcess).then(update => {
+                    console.log(update);
+                    toast({
+                        title: 'Processo',
+                        description: update.data.message,
+                        status: 'success',
+                        duration: 9000,
+                        isClosable: true,
                     });
-                }
-
-                const result = await updateDoc(_processRef, {
-                    author: editProcess?.author,
-                    defendant: editProcess?.defendant,
-                    decision: editProcess?.decision,
-                    updated_at: editProcess?.updated_at,
-                    accountable: editProcess?.accountable ?? null,
-                    deadline: arrayUnion(dataProcessNode1)
-                });
-
-                toast({
-                    title: 'Processo',
-                    description: "Processo alterado com sucesso",
-                    status: 'success',
-                    duration: 9000,
-                    isClosable: true,
+                }).catch(function (error) {
+                    console.error(error);
                 });
             }
 
             await getProcessList();
         } catch (error) {
-            console.log(error);
+            console.error(error);
 
             toast({
                 title: 'Processo',
@@ -394,7 +380,7 @@ const AnalystWaiting: NextPage = () => {
             'Observation': editProcess?.decision
         };
 
-        api.post(`message/notify-avocado`, _mensagem).then(result =>
+        return api.post(`message/notify-avocado`, _mensagem).then(result =>
         {
             if(result.data) {
                 toast({
@@ -412,7 +398,7 @@ const AnalystWaiting: NextPage = () => {
 
     const _handleGetProcessOnThemis = async (processNumber:string) => {
 
-        api.get(`themis/process/${processNumber}`).then(result => {
+        api2.get(`themis/process/${processNumber}`).then(result => {
             
             if(result.status === 204) {
                 return false;
@@ -435,16 +421,29 @@ const AnalystWaiting: NextPage = () => {
     }
 
     const updateProcessNumberFromThemis = async (themis_id:number) => {
-        const _processRef = doc(db, `proccess/${editProcess?.uid}`);
+        // const _processRef = doc(db, `proccess/${editProcess?.uid}`);
 
-        await updateDoc(_processRef, {
-            themis_id: themis_id
+        // await updateDoc(_processRef, {
+        //     themis_id: themis_id
+        // });
+
+        await api.post(`Process/${editProcess?.uid}`, editProcess).then(async edit => {
+            toast({
+                title: 'Processo',
+                description: edit.data.message,
+                status: 'info',
+                duration: 9000,
+                isClosable: true,
+            });
+
+            if(editProcess) {
+                setEditProcess({...editProcess, ['themis_Id']: themis_id });
+                await getProcessList();
+            }
+
+        }).catch(function (error) {
+            console.log(error);
         });
-
-        if(editProcess) {
-            setEditProcess({...editProcess, ['themis_id']: themis_id });
-            await getProcessList();
-        }
     };
 
     const _handleSetFowardProcessOnThemis = async (
@@ -473,8 +472,7 @@ const AnalystWaiting: NextPage = () => {
             }
         };
 
-
-        api.put(`themis/process/add-foward/${editProcess?.number}`, _foward).then(result =>
+        return api.put(`themis/process/add-foward/${editProcess?.number}`, _foward).then(result =>
         {
             if(result.data) {
                 toast({
@@ -487,7 +485,7 @@ const AnalystWaiting: NextPage = () => {
             }
             return result.data;
         }).catch(function (error) {
-            console.log(error);
+            console.error(error);
             toast({
                 title: 'Processo (Themis)',
                 description: 'Não foi possível distribuir o processo',
@@ -496,7 +494,6 @@ const AnalystWaiting: NextPage = () => {
                 isClosable: true,
             });
         });
-        return true;
     };
 
     const _handlePostProcessOnThemis = async (processNumber:string) => {
@@ -683,7 +680,7 @@ const AnalystWaiting: NextPage = () => {
 
                         {(editProcess?.deadline !=null
                             && editProcess?.deadline.length == 2
-                            && !editProcess?.deadline?.every((val, i, arr) => val.deadline_internal_date == arr[0].deadline_internal_date)
+                            && !editProcess?.deadline?.every((val, i, arr) => val.deadline_Internal_Date == arr[0].deadline_Internal_Date)
                             ) && (
                             <Alert status='error' variant='left-accent'>
                                 <AlertIcon />
@@ -693,7 +690,7 @@ const AnalystWaiting: NextPage = () => {
 
                         {(editProcess?.deadline !=null
                             && editProcess?.deadline.length == 2
-                            && !editProcess?.deadline?.every((val, i, arr) => val.deadline_court_date == arr[0].deadline_court_date)
+                            && !editProcess?.deadline?.every((val, i, arr) => val.deadline_Court_Date == arr[0].deadline_Court_Date)
                             ) && (
                             <Alert status='error' variant='left-accent'>
                                 <AlertIcon />
@@ -703,13 +700,13 @@ const AnalystWaiting: NextPage = () => {
 
                         <Flex>
                         <FormControl>
-                            {editProcess?.themis_id && (
+                            {editProcess?.themis_Id && (
                                 <Text>
-                                    #{editProcess?.themis_id}
+                                    #{editProcess?.themis_Id}
                                 </Text>
                             )}
 
-                            {editProcess?.themis_id == null && (
+                            {editProcess?.themis_Id == null && (
                                 <Button
                                     colorScheme={'blue'}
                                     onClick={() => _handlePostProcessOnThemis(editProcess?.number ?? '')}
@@ -780,7 +777,7 @@ const AnalystWaiting: NextPage = () => {
                         </Flex>
 
                         {/* Visualização das informações permitindo nova inserção */}
-                        {!editProcess?.deadline?.find(x=>x.deadline_interpreter == user?.uid) && !editProcess?.date_final && (
+                        {!editProcess?.deadline?.find(x=>x.deadline_Interpreter == user?.uid) && !editProcess?.date_Final && (
                             <Flex hidden={!isCourtDeadline}>
                                 <Box
                                     padding = {2}
@@ -831,7 +828,7 @@ const AnalystWaiting: NextPage = () => {
 
                         {/* Escolhe o advogado responsável, somente se for o segundo analista */}
                         {(editProcess?.deadline?.length == 1)
-                            && !editProcess?.deadline?.find(x=>x.deadline_interpreter == user?.uid)
+                            && !editProcess?.deadline?.find(x=>x.deadline_Interpreter == user?.uid)
                         &&(
                         <FormControl mt={4}>
                             <FormLabel>Responsável</FormLabel>
@@ -857,7 +854,7 @@ const AnalystWaiting: NextPage = () => {
                         )}
 
                         {/* Visualização das informações permitindo a edição */}
-                        {editProcess?.deadline?.find(x=>x.deadline_interpreter == user?.uid) && !editProcess?.date_final && (
+                        {editProcess?.deadline?.find(x=>x.deadline_Interpreter == user?.uid) && !editProcess?.date_Final && (
                             <Flex hidden={!isCourtDeadline}>
                                 <Box padding = {10}>
                                 <FormControl>
@@ -870,7 +867,7 @@ const AnalystWaiting: NextPage = () => {
                                         fontSize={'0.8rem'}
                                         color={'GrayText'}
                                     >
-                                        Data Formatada: {editProcess?.deadline?.find(x=>x.deadline_interpreter == user?.uid)?.deadline_internal_date}
+                                        Data Formatada: {editProcess?.deadline?.find(x=>x.deadline_Interpreter == user?.uid)?.deadline_Internal_Date}
                                     </Text>
                                     
                                 </FormControl>
@@ -887,7 +884,7 @@ const AnalystWaiting: NextPage = () => {
                                         fontSize={'0.8rem'}
                                         color={'GrayText'}
                                     >
-                                        Data Formatada: {editProcess?.deadline?.find(x=>x.deadline_interpreter == user?.uid)?.deadline_court_date}
+                                        Data Formatada: {editProcess?.deadline?.find(x=>x.deadline_Interpreter == user?.uid)?.deadline_Court_Date}
                                     </Text>
                                 </FormControl>
                                 </Box>
@@ -904,13 +901,13 @@ const AnalystWaiting: NextPage = () => {
                             </Text>
                         )}
 
-                        {editProcess?.date_final && (
+                        {editProcess?.date_Final && (
                             <Text
                                 fontSize={'0.8rem'}
                                 fontWeight={'bold'}
                                 color={'blue.300'}
                             >
-                                Data Final: {editProcess?.date_final}
+                                Data Final: {editProcess?.date_Final}
                             </Text>
                         )}
 
@@ -918,7 +915,7 @@ const AnalystWaiting: NextPage = () => {
                             fontSize={'0.6rem'}
                             fontWeight={'bold'}
                         >
-                            Criado em: {editProcess?.created_at?.toDate().toLocaleDateString('pt-BR', {
+                            Criado em: {new Date(editProcess?.created_At ?? new Date())?.toLocaleDateString('pt-BR', {
                                 year: 'numeric',
                                 month: '2-digit',
                                 day: '2-digit',
@@ -927,12 +924,12 @@ const AnalystWaiting: NextPage = () => {
                             })}
                         </Text>
 
-                        {editProcess?.updated_at && (
+                        {editProcess?.updated_At && (
                             <Text
                                 fontSize={'0.6rem'}
                                 fontWeight={'bold'}
                             >
-                                Atualizado em: {editProcess?.updated_at?.toDate().toLocaleDateString('pt-BR', {
+                                Atualizado em: {new Date(editProcess?.updated_At ?? new Date())?.toLocaleDateString('pt-BR', {
                                     year: 'numeric',
                                     month: '2-digit',
                                     day: '2-digit',

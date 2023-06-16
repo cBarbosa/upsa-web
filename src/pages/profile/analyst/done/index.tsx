@@ -49,7 +49,7 @@ import {
     RepeatIcon
 } from "@chakra-ui/icons";
 import InputMask from 'react-input-mask';
-import { api } from "../../../../services/api";
+import { api, api2 } from "../../../../services/api";
 import { ProcessType } from '../../../../models/ThemisTypes';
 import { UserType } from '../../../../models/FirebaseTypes';
 
@@ -57,7 +57,7 @@ const AnalystDone: NextPage = () => {
 
     const {isAuthenticated, role, user} = useAuth();
     const database = db;
-    const proccessCollection = collection(database, 'proccess');
+    // const proccessCollection = collection(database, 'proccess');
     const {['upsa.role']: upsaRole} = parseCookies(null);
     const route = useRouter();
     const [processList, setProcessList] = useState<ProcessType[]>([]);
@@ -78,34 +78,28 @@ const AnalystDone: NextPage = () => {
     }, []);
 
     const getProcessList = async () => {
-        const processQuery = query(proccessCollection, where('active', '==', true));
-        const querySnapshot = await getDocs(processQuery);
+        // const processQuery = query(proccessCollection, where('active', '==', true));
+        // const querySnapshot = await getDocs(processQuery);
 
-        const result:ProcessType[] = [];
-        querySnapshot.forEach((snapshot) => {
+        const processQuery = await api.get(`Process?size=9000`).then(processos => {
+            
+            const querySnapshot:ProcessType[] = processos.data.items;
+            let result: ProcessType[] = [];
 
-            const hasAccountability = (snapshot.data() as ProcessType)?.deadline?.some(x => x.deadline_interpreter == user?.uid);
-            const hasTwoDeadlines = (snapshot.data() as ProcessType)?.deadline?.length == 2;
+            querySnapshot.forEach(snapshot => {
 
-            if(hasTwoDeadlines && hasAccountability) {
-                result.push({
-                    uid: snapshot.id,
-                    number: snapshot.data().number,
-                    author: snapshot.data().author,
-                    defendant: snapshot.data().defendant,
-                    decision: snapshot.data().decision,
-                    instance: snapshot.data().instance,
-                    accountable: snapshot.data().accountable,
-                    deadline: snapshot.data().deadline,
-                    themis_id: snapshot.data().themis_id,
-                    date_final: snapshot.data().date_final,
-                    created_at: snapshot.data().created_at,
-                    updated_at: snapshot.data().updated_at,
-                    active: snapshot.data().active
-                });
-            }
+                const hasAccountability = snapshot?.deadline?.some(x => x.deadline_Interpreter == user?.uid);
+                const hasTwoDeadlines = snapshot?.deadline?.length == 2;
+    
+                if(hasTwoDeadlines && hasAccountability) {
+                    result.push(snapshot);
+                }
+            });
+
+            setProcessList(result);
+        }).catch(function (error) {
+            console.log(error);
         });
-        setProcessList(result);
     };
 
     const getAvocadoList = async () => {
@@ -156,7 +150,7 @@ const AnalystDone: NextPage = () => {
                 number: proc.number,
                 author: proc.author,
                 defendant: proc.defendant,
-                created_at: proc.created_at.toDate().toLocaleDateString('pt-BR', {
+                created_at: new Date(proc.created_At).toLocaleDateString('pt-BR', {
                     year: 'numeric',
                     month: '2-digit',
                     day: '2-digit',
@@ -170,41 +164,38 @@ const AnalystDone: NextPage = () => {
     }
 
     const _handleEditProcess = async (item: ProcessType) => {
-        setEditProcess({...item, ['updated_at']: Timestamp.now() });
-        if(!item.themis_id) {
-            await _handleGetProcessOnThemis(item.number);
+        setEditProcess({...item, ['updated_At']: new Date() });
+        if(!item.themis_Id || item.themis_Id == 0) {
+            const themis_id = await _handleGetProcessOnThemis(item.number).then(async retorno => {
+                if(retorno > 0) {
+                    setEditProcess({...item, ['themis_Id']: retorno });
+                    await api.post(`Process/${item.uid}`, editProcess).then(edit => {
+                        toast({
+                            title: 'Processo',
+                            description: edit.data.message,
+                            status: 'info',
+                            duration: 9000,
+                            isClosable: true,
+                        });
+                    }).catch(function (error) {
+                        console.log(error);
+                    });
+                }
+            }).catch(function (error) {
+                console.log(error);
+            });
         }
         onOpen();
     };
 
     const _handleGetProcessOnThemis = async (processNumber:string) => {
-
-        api.get(`themis/process/${processNumber}`).then(result => {
-            
+        return api2.get(`themis/process/${processNumber}`).then(result => {
             if(result.status === 204) {
-                return;
+                return -1;
             }
-
-            updateProcessNumberFromThemis(result?.data?.id).then((result) => {
-                toast({
-                    title: 'Processo',
-                    description: 'Processo atualizado com as informações do Themis',
-                    status: 'info',
-                    duration: 9000,
-                    isClosable: true,
-                });
-            });
-
+            return result.data?.id;
         }).catch(function (error) {
             console.log(error);
-        });
-    }
-
-    const updateProcessNumberFromThemis = async (themis_id:number) => {
-        const _processRef = doc(db, `proccess/${editProcess?.uid}`);
-
-        await updateDoc(_processRef, {
-            themis_id: themis_id
         });
     };
 
@@ -287,8 +278,8 @@ const AnalystDone: NextPage = () => {
 
                         {(editProcess?.deadline !=null
                             && editProcess?.deadline.length == 2
-                            && !editProcess?.deadline?.every((val, i, arr) => val.deadline_internal_date === arr[0].deadline_internal_date)
-                            && !editProcess.date_final
+                            && !editProcess?.deadline?.every((val, i, arr) => val.deadline_Internal_Date === arr[0].deadline_Internal_Date)
+                            && !editProcess.date_Final
                             ) && (
                             <Alert status='error' variant='left-accent'>
                                 <AlertIcon />
@@ -298,8 +289,8 @@ const AnalystDone: NextPage = () => {
 
                         {(editProcess?.deadline !=null
                             && editProcess?.deadline.length == 2
-                            && !editProcess?.deadline?.every((val, i, arr) => val.deadline_court_date === arr[0].deadline_court_date)
-                            && !editProcess.date_final
+                            && !editProcess?.deadline?.every((val, i, arr) => val.deadline_Court_Date === arr[0].deadline_Court_Date)
+                            && !editProcess.date_Final
                             ) && (
                             <Alert status='error' variant='left-accent'>
                                 <AlertIcon />
@@ -309,9 +300,9 @@ const AnalystDone: NextPage = () => {
 
                         <Flex>
                         <FormControl>
-                            {editProcess?.themis_id && (
+                            {editProcess?.themis_Id && (
                                 <Text>
-                                    #{editProcess?.themis_id}
+                                    #{editProcess?.themis_Id}
                                 </Text>
                             )}
                             <FormLabel>Numero do processo</FormLabel>
@@ -359,26 +350,26 @@ const AnalystDone: NextPage = () => {
                             />
                         </FormControl>
 
-                        {(`${editProcess?.deadline?.find(x=>x.deadline_interpreter == user?.uid)?.deadline_internal_date}` != 'null'
-                            && `${editProcess?.deadline?.find(x=>x.deadline_interpreter == user?.uid)?.deadline_court_date}` != 'null') && (
+                        {(`${editProcess?.deadline?.find(x=>x.deadline_Interpreter == user?.uid)?.deadline_Internal_Date}` != 'null'
+                            && `${editProcess?.deadline?.find(x=>x.deadline_Interpreter == user?.uid)?.deadline_Court_Date}` != 'null') && (
                             <Alert status='info' variant='left-accent'>
                                 <AlertIcon />
                                 <Text
                                     paddingRight={5}
                                 >
-                                    Data Interna: {editProcess?.deadline?.find(x=>x.deadline_interpreter == user?.uid)?.deadline_internal_date}
+                                    Data Interna: {editProcess?.deadline?.find(x=>x.deadline_Interpreter == user?.uid)?.deadline_Internal_Date}
                                 </Text>
                                 -
                                 <Text
                                     paddingLeft={5}
                                 >
-                                    Data Judicial: {editProcess?.deadline?.find(x=>x.deadline_interpreter == user?.uid)?.deadline_court_date}
+                                    Data Judicial: {editProcess?.deadline?.find(x=>x.deadline_Interpreter == user?.uid)?.deadline_Court_Date}
                                 </Text>
                             </Alert>
                         )}
 
-                        {(`${editProcess?.deadline?.find(x=>x.deadline_interpreter == user?.uid)?.deadline_internal_date}` == 'null'
-                            && `${editProcess?.deadline?.find(x=>x.deadline_interpreter == user?.uid)?.deadline_court_date}` == 'null') &&(
+                        {(`${editProcess?.deadline?.find(x=>x.deadline_Interpreter == user?.uid)?.deadline_Internal_Date}` == 'null'
+                            && `${editProcess?.deadline?.find(x=>x.deadline_Interpreter == user?.uid)?.deadline_Court_Date}` == 'null') &&(
                             <Alert status='info' variant='left-accent'>
                                 <AlertIcon />
                                 <Text
@@ -399,13 +390,13 @@ const AnalystDone: NextPage = () => {
                             </Text>
                         )}
 
-                        {`${editProcess?.date_final}` != 'null' && (
+                        {`${editProcess?.date_Final}` != 'null' && (
                             <Text
                                 fontSize={'0.8rem'}
                                 fontWeight={'bold'}
                                 color={'blue.300'}
                             >
-                                Data Final: {editProcess?.date_final}
+                                Data Final: {editProcess?.date_Final}
                             </Text>
                         )}
 
@@ -413,7 +404,7 @@ const AnalystDone: NextPage = () => {
                             fontSize={'0.6rem'}
                             fontWeight={'bold'}
                         >
-                            Criado em: {editProcess?.created_at?.toDate().toLocaleDateString('pt-BR', {
+                            Criado em: {new Date(editProcess?.created_At ?? new Date())?.toLocaleDateString('pt-BR', {
                                 year: 'numeric',
                                 month: '2-digit',
                                 day: '2-digit',
@@ -422,12 +413,12 @@ const AnalystDone: NextPage = () => {
                             })}
                         </Text>
 
-                        {editProcess?.updated_at && (
+                        {editProcess?.updated_At && (
                             <Text
                                 fontSize={'0.6rem'}
                                 fontWeight={'bold'}
                             >
-                                Atualizado em: {editProcess?.updated_at?.toDate().toLocaleDateString('pt-BR', {
+                                Atualizado em: {new Date(editProcess?.updated_At ?? new Date())?.toLocaleDateString('pt-BR', {
                                     year: 'numeric',
                                     month: '2-digit',
                                     day: '2-digit',

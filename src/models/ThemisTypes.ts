@@ -8,20 +8,20 @@ export type ProcessType = {
     decision: string;
     accountable: string;
     instance?: string;
-    themis_id?: number;
+    themis_Id?: number;
     deadline: DeadLineProcessType[];
-    description_forward?:string;
-    date_final?: string;
+    description_Forward?:string;
+    date_Final?: string;
     active: boolean;
-    created_at: Timestamp;
-    updated_at: Timestamp;
+    created_At: Date;
+    updated_At: Date;
 };
 
 export type DeadLineProcessType = {
-    deadline_internal_date: string;
-    deadline_court_date: string;
-    deadline_interpreter: string;
+    deadline_Internal_Date: string;
+    deadline_Court_Date: string;
+    deadline_Interpreter: string;
     checked: boolean;
-    created_at: Timestamp;
-    checked_at: Timestamp;
+    created_At: Date;
+    // checked_At: Date;
 };
