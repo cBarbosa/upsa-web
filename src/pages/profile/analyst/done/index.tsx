@@ -390,7 +390,7 @@ const AnalystDone: NextPage = () => {
                             </Text>
                         )}
 
-                        {`${editProcess?.date_Final}` != 'null' && (
+                        {editProcess?.date_Final && (
                             <Text
                                 fontSize={'0.8rem'}
                                 fontWeight={'bold'}

@@ -827,7 +827,7 @@ const ProcessListPage: NextPage = () => {
                                 fontWeight={'bold'}
                                 color={'blue.300'}
                             >
-                                Data Final: {editProcess?.date_Final != 'null' ? editProcess?.date_Final : 'Sem Prazo'}
+                                Data Final: {editProcess?.date_Final ?? 'Sem Prazo'}
                             </Text>
                         )}
 

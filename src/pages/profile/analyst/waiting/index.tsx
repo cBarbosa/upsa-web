@@ -185,10 +185,10 @@ const AnalystWaiting: NextPage = () => {
         const _strInternalDate = `${item?.deadline?.find(x=>x.deadline_Interpreter == user?.uid)?.deadline_Internal_Date}`;
         const _strCourtDate = `${item?.deadline?.find(x=>x.deadline_Interpreter == user?.uid)?.deadline_Court_Date}`;
 
-        const _internalDate = _strInternalDate == 'null' || _strInternalDate == 'undefined'
+        const _internalDate = !_strInternalDate
             ? new Date()
             : new Date(parseInt(_strInternalDate.split('/')[2]), parseInt(_strInternalDate.split('/')[1])-1, parseInt(_strInternalDate.split('/')[0]));
-        const _courtDate = _strCourtDate == 'null' || _strCourtDate == 'undefined'
+        const _courtDate = !_strCourtDate
             ? new Date()
             : new Date(parseInt(_strCourtDate.split('/')[2]), parseInt(_strCourtDate.split('/')[1])-1, parseInt(_strCourtDate.split('/')[0]));
     
@@ -263,13 +263,13 @@ const AnalystWaiting: NextPage = () => {
                     year: 'numeric',
                     month: '2-digit',
                     day: '2-digit'
-                }) : 'null';
+                }) : null;
                 const _court1 = `${editProcess?.deadline[0].deadline_Court_Date}`;
                 const _court2 = isCourtDeadline ? newCourtDate.toLocaleDateString('pt-BR',{
                     year: 'numeric',
                     month: '2-digit',
                     day: '2-digit'
-                }) : 'null';
+                }) : null;
 
                 if(!_internalDate || !_courtDate) {
                     await _handleSendMessageDivergentProcessOnThemis(_date1, _date2, _court1, _court2);
@@ -447,8 +447,8 @@ const AnalystWaiting: NextPage = () => {
     };
 
     const _handleSetFowardProcessOnThemis = async (
-        _internalDate:string,
-        _courtDate:string) => {
+        _internalDate?:string,
+        _courtDate?:string) => {
         
         const themisAvocadoId = avocadoList.find(x => x.uid == editProcess?.accountable)?.themis_id;
 
@@ -464,8 +464,8 @@ const AnalystWaiting: NextPage = () => {
         }
 
         const _foward = {
-            "data": _internalDate == 'null' ? 'Sem Prazo' : _internalDate,
-            "dataJudicial": _courtDate == 'null' ? 'Sem Prazo' : _courtDate,
+            "data": !_internalDate ? 'Sem Prazo' : _internalDate,
+            "dataJudicial": !_courtDate ? 'Sem Prazo' : _courtDate,
             "descricao": editProcess?.decision,
             "advogado": {
                "id": themisAvocadoId

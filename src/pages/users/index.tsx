@@ -43,12 +43,13 @@ import BottomNav from '../../Components/BottomNav';
 import {parseCookies} from "nookies";
 import DataTableRCkakra from "../../Components/Table";
 import { UserType } from '../../models/FirebaseTypes';
+import { api2 } from '../../services/api';
 
 export default function UsersPage({data}: any) {
     const database = db;
     const toast = useToast();
     const route = useRouter();
-    const usersCollection = collection(database, 'users');
+    // const usersCollection = collection(database, 'users');
     const {user, role, isAuthenticated} = useAuth();
     const {isOpen, onOpen, onClose} = useDisclosure();
     const [users, setUsers] = useState<UserType[]>([]);
@@ -67,8 +68,10 @@ export default function UsersPage({data}: any) {
     }, []);
 
     const getUsers = async () => {
-        const usersQuery = query(usersCollection, orderBy('displayName'));
-        const querySnapshot = await getDocs(usersQuery);
+        // const usersQuery = query(usersCollection, orderBy('displayName'));
+        // const querySnapshot = await getDocs(usersQuery);
+
+        const processQuery = await api2.get('User?size=9000')
 
         const result: UserType[] = [];
         querySnapshot.forEach((snapshot) => {
