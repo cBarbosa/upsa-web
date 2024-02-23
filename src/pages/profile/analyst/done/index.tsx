@@ -32,16 +32,16 @@ import {
     useToast
 } from "@chakra-ui/react";
 import React, { useEffect, useMemo, useState } from "react";
-import { db } from "../../../../services/firebase";
-import {
-    collection,
-    doc,
-    getDocs,
-    query,
-    Timestamp,
-    updateDoc,
-    where
-} from "firebase/firestore";
+// import { db } from "../../../../services/firebase";
+// import {
+//     collection,
+//     doc,
+//     getDocs,
+//     query,
+//     Timestamp,
+//     updateDoc,
+//     where
+// } from "firebase/firestore";
 import { useRouter } from "next/router";
 import DataTableRCkakra from '../../../../Components/Table';
 import {
@@ -56,7 +56,7 @@ import { UserType } from '../../../../models/FirebaseTypes';
 const AnalystDone: NextPage = () => {
 
     const {isAuthenticated, role, user} = useAuth();
-    const database = db;
+    // const database = db;
     // const proccessCollection = collection(database, 'proccess');
     const {['upsa.role']: upsaRole} = parseCookies(null);
     const route = useRouter();
@@ -67,15 +67,15 @@ const AnalystDone: NextPage = () => {
     const toast = useToast();
 
     useEffect(() => {
-        if (user != null) {
-            getProcessList().then(() => {
-                if(upsaRole !='analyst') {
-                    route.push('/');
-                }
-            });
+
+        if (user) {
+            getProcessList();
+            getAvocadoList();
         }
-        getAvocadoList();
-    }, []);
+
+        if(upsaRole !== 'analyst')  route.push('/');
+
+    }, [user]);
 
     const getProcessList = async () => {
         // const processQuery = query(proccessCollection, where('active', '==', true));
@@ -103,23 +103,23 @@ const AnalystDone: NextPage = () => {
     };
 
     const getAvocadoList = async () => {
-        const processQuery = query(collection(database, 'users'));
-        const querySnapshot = await getDocs(processQuery);
+        // const processQuery = query(collection(database, 'users'));
+        // const querySnapshot = await getDocs(processQuery);
 
-        const result:UserType[] = [];
-        querySnapshot.forEach((snapshot) => {
-            result.push({
-                uid: snapshot.id,
-                displayName: snapshot.data().displayName,
-                email: snapshot.data().email,
-                role: snapshot.data().role,
-                photoURL: snapshot.data().photoURL,
-                phoneNumber: snapshot.data().phoneNumber,
-                themis_id: snapshot.data().themis_id,
-                createdAt: snapshot.data().createdAt
-            } as UserType);
+        const processQuery = await api.get(`User?size=9000&role=avocado`)
+        .then(usuarios => {
+
+            // const querySnapshot: UserType[] = usuarios.data.items;
+            // let result: UserType[] = [];
+
+            // querySnapshot.forEach((snapshot) => {
+            //     result.push(snapshot);
+            // });
+
+            setAvocadoList(usuarios.data.items ?? []);
+        }).catch(function (error) {
+            console.error(error);
         });
-        setAvocadoList(result);
     };
 
     function editProcessFromData(proc: ProcessType) {
@@ -178,11 +178,11 @@ const AnalystDone: NextPage = () => {
                             isClosable: true,
                         });
                     }).catch(function (error) {
-                        console.log(error);
+                        console.error(error);
                     });
                 }
             }).catch(function (error) {
-                console.log(error);
+                console.error(error);
             });
         }
         onOpen();

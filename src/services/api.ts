@@ -3,7 +3,8 @@ import axios from 'axios';
 function getAPIClient() {
 
     const api = axios.create({
-        baseURL: 'https://upsa-api.azurewebsites.net/api',
+        // baseURL: 'https://upsa-api.azurewebsites.net/api',
+        baseURL: 'https://upsadev-api.azurewebsites.net/api',
         headers: {
             'Access-Control-Allow-Origin': '*',
             'Content-Type': 'application/json;charset=utf-8',
@@ -14,19 +15,19 @@ function getAPIClient() {
     return api;
 }
 
-function getAPIClient2() {
+// function getAPIClient2() {
 
-    const api = axios.create({
-        baseURL: 'https://upsa-api.azurewebsites.net/api',
-        headers: {
-            'Access-Control-Allow-Origin': '*',
-            'Content-Type': 'application/json;charset=utf-8',
-            'Access-Control-Allow-Methods': 'GET,PUT,POST,DELETE,PATCH,OPTIONS'
-        }
-    });
+//     const api = axios.create({
+//         baseURL: 'https://localhost:5001/api',
+//         headers: {
+//             'Access-Control-Allow-Origin': '*',
+//             'Content-Type': 'application/json;charset=utf-8',
+//             'Access-Control-Allow-Methods': 'GET,PUT,POST,DELETE,PATCH,OPTIONS'
+//         }
+//     });
    
-    return api;
-}
+//     return api;
+// }
 
 export const api = getAPIClient();
-export const api2 = getAPIClient2();
+// export const api2 = getAPIClient2();

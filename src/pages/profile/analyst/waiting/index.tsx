@@ -1,4 +1,4 @@
-import { db } from '../../../../services/firebase';
+// import { db } from '../../../../services/firebase';
 import DataTableRCkakra from '../../../../Components/Table';
 import Head from "next/head";
 import {
@@ -66,7 +66,7 @@ import { UserType } from '../../../../models/FirebaseTypes';
 const AnalystWaiting: NextPage = () => {
     const toast = useToast();
     const route = useRouter();
-    const database = db;
+    // const database = db;
     // const proccessCollection = collection(database, 'proccess');
     const { isAuthenticated, role, user } = useAuth();
     const [processList, setProcessList] = useState<ProcessType[]>([]);
@@ -81,15 +81,15 @@ const AnalystWaiting: NextPage = () => {
     const [isCourtDeadline, setIsCourtDeadline] = useState(false);
 
     useEffect(() => {
-        if (user != null) {
-            getProcessList().then(() => {
-                if(upsaRole !='analyst') {
-                    route.push('/');
-                }
-            });
+
+        if (user) {
+            getProcessList();
+            getAvocadoList();
         }
-        getAvocadoList();
-    }, []);
+
+        if(upsaRole !== 'analyst')  route.push('/');
+
+    }, [user]);
 
     const getProcessList = async () => {
         // const processQuery = query(proccessCollection, where('active', '==', true));
@@ -119,23 +119,23 @@ const AnalystWaiting: NextPage = () => {
     };
 
     const getAvocadoList = async () => {
-        const processQuery = query(collection(database, 'users'));
-        const querySnapshot = await getDocs(processQuery);
+        // const processQuery = query(collection(database, 'users'));
+        // const querySnapshot = await getDocs(processQuery);
 
-        const result:UserType[] = [];
-        querySnapshot.forEach((snapshot) => {
-            result.push({
-                uid: snapshot.id,
-                displayName: snapshot.data().displayName,
-                email: snapshot.data().email,
-                role: snapshot.data().role,
-                photoURL: snapshot.data().photoURL,
-                phoneNumber: snapshot.data().phoneNumber,
-                themis_id: snapshot.data().themis_id,
-                createdAt: snapshot.data().createdAt
-            } as UserType);
+        const processQuery = await api.get(`User?size=9000&role=avocado`)
+        .then(usuarios => {
+
+            // const querySnapshot: UserType[] = usuarios.data.items;
+            // let result: UserType[] = [];
+
+            // querySnapshot.forEach((snapshot) => {
+            //     result.push(snapshot);
+            // });
+
+            setAvocadoList(usuarios.data.items ?? []);
+        }).catch(function (error) {
+            console.error(error);
         });
-        setAvocadoList(result);
     };
 
     function getProcessFromData() {
@@ -185,10 +185,10 @@ const AnalystWaiting: NextPage = () => {
         const _strInternalDate = `${item?.deadline?.find(x=>x.deadline_Interpreter == user?.uid)?.deadline_Internal_Date}`;
         const _strCourtDate = `${item?.deadline?.find(x=>x.deadline_Interpreter == user?.uid)?.deadline_Court_Date}`;
 
-        const _internalDate = !_strInternalDate
+        const _internalDate = _strInternalDate === 'undefined'
             ? new Date()
             : new Date(parseInt(_strInternalDate.split('/')[2]), parseInt(_strInternalDate.split('/')[1])-1, parseInt(_strInternalDate.split('/')[0]));
-        const _courtDate = !_strCourtDate
+        const _courtDate = _strCourtDate === 'undefined'
             ? new Date()
             : new Date(parseInt(_strCourtDate.split('/')[2]), parseInt(_strCourtDate.split('/')[1])-1, parseInt(_strCourtDate.split('/')[0]));
     
@@ -366,17 +366,17 @@ const AnalystWaiting: NextPage = () => {
     };
 
     const _handleSendMessageDivergentProcessOnThemis = async(
-        _date1:string,
-        _date2:string,
-        _court1:string,
-        _court2:string) => {
+        _date1:string | null,
+        _date2: string | null,
+        _court1:string | null,
+        _court2: string | null) => {
 
         const _mensagem = {
             'ProcessNumber': editProcess?.number,
-            'InternalDate1': _date1 == 'null' ? 'Sem Prazo' : _date1,
-            'InternalDate2': _date2 == 'null' ? 'Sem Prazo' : _date2,
-            'CourtDate1': _court1 == 'null' ? 'Sem Prazo' : _court1,
-            'CourtDate2': _court2 == 'null' ? 'Sem Prazo' : _court2,
+            'InternalDate1': _date1 ?? 'Sem Prazo',
+            'InternalDate2': _date2 ?? 'Sem Prazo',
+            'CourtDate1': _court1 ?? 'Sem Prazo',
+            'CourtDate2': _court2 ?? 'Sem Prazo',
             'Observation': editProcess?.decision
         };
 
@@ -396,9 +396,10 @@ const AnalystWaiting: NextPage = () => {
         });
     }
 
-    const _handleGetProcessOnThemis = async (processNumber:string) => {
+    const _handleGetProcessOnThemis = async (processNumber: string): Promise<boolean> => {
 
-        api.get(`themis/process/${processNumber}`).then(result => {
+        api.get(`themis/process/${processNumber}`)
+        .then(result => {
             
             if(result.status === 204) {
                 return false;
@@ -414,11 +415,11 @@ const AnalystWaiting: NextPage = () => {
                 });
             });
         }).catch(function (error) {
-            console.log(error);
+            console.error(error);
         });
 
         return true;
-    }
+    };
 
     const updateProcessNumberFromThemis = async (themis_id:number) => {
         // const _processRef = doc(db, `proccess/${editProcess?.uid}`);
@@ -447,8 +448,8 @@ const AnalystWaiting: NextPage = () => {
     };
 
     const _handleSetFowardProcessOnThemis = async (
-        _internalDate?:string,
-        _courtDate?:string) => {
+        _internalDate: string | null,
+        _courtDate: string | null) => {
         
         const themisAvocadoId = avocadoList.find(x => x.uid == editProcess?.accountable)?.themis_id;
 
@@ -464,23 +465,23 @@ const AnalystWaiting: NextPage = () => {
         }
 
         const _foward = {
-            "data": !_internalDate ? 'Sem Prazo' : _internalDate,
-            "dataJudicial": !_courtDate ? 'Sem Prazo' : _courtDate,
+            "data": _internalDate ?? 'Sem Prazo',
+            "dataJudicial": _courtDate ?? 'Sem Prazo',
             "descricao": editProcess?.decision,
             "advogado": {
                "id": themisAvocadoId
             }
         };
 
-        return api.put(`themis/process/add-foward/${editProcess?.number}`, _foward).then(result =>
-        {
+        return api.put(`themis/process/add-foward/${editProcess?.number}`, _foward)
+        .then(result => {
             if(result.data) {
                 toast({
                     title: 'Processo (Themis)',
                     description: 'Processo distribuido com sucesso',
                     status: 'success',
                     duration: 9000,
-                    isClosable: true,
+                    isClosable: true
                 });
             }
             return result.data;
@@ -491,18 +492,19 @@ const AnalystWaiting: NextPage = () => {
                 description: 'Não foi possível distribuir o processo',
                 status: 'error',
                 duration: 9000,
-                isClosable: true,
+                isClosable: true
             });
         });
     };
 
     const _handlePostProcessOnThemis = async (processNumber:string) => {
 
-        if(processNumber == '') {
+        if(!processNumber || processNumber == '') {
             return;
         }
 
-        _handleGetProcessOnThemis(processNumber).then(result => {
+        _handleGetProcessOnThemis(processNumber)
+        .then(result => {
             if(result) {
                 return;
             }
@@ -563,7 +565,7 @@ const AnalystWaiting: NextPage = () => {
                 });
             }
         }).catch(function (error) {
-            console.log(error);
+            console.error(error);
             toast({
                 title: 'Processo (Themis)',
                 description: 'Não foi cadastrar o processo',
