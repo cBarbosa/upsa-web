@@ -105,23 +105,14 @@ const AvocadoDone: NextPage = () => {
     };
 
     const getAvocadoList = async () => {
-        const processQuery = query(collection(database, 'users'));
-        const querySnapshot = await getDocs(processQuery);
 
-        const result:UserType[] = [];
-        querySnapshot.forEach((snapshot) => {
-            result.push({
-                uid: snapshot.id,
-                displayName: snapshot.data().displayName,
-                email: snapshot.data().email,
-                role: snapshot.data().role,
-                photoURL: snapshot.data().photoURL,
-                phoneNumber: snapshot.data().phoneNumber,
-                themis_id: snapshot.data().themis_id,
-                createdAt: snapshot.data().createdAt
-            } as UserType);
+        const processQuery = await api.get(`User?size=9000`)
+        .then(usuarios => {
+
+            setAvocadoList(usuarios.data.items ?? []);
+        }).catch(function (error) {
+            console.error(error);
         });
-        setAvocadoList(result);
     };
 
     function editProcessFromData(proc: ProcessType) {
