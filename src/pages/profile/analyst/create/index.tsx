@@ -34,21 +34,21 @@ import InputMask from 'react-input-mask';
 import React, { useEffect, useState } from 'react';
 import { SingleDatepicker } from 'chakra-dayzed-datepicker';
 import { api } from "../../../../services/api";
-import {
-    addDoc,
-    collection,
-    getDocs,
-    query,
-    Timestamp,
-    where
-} from "firebase/firestore";
-import { db } from "../../../../services/firebase";
+// import {
+//     addDoc,
+//     collection,
+//     getDocs,
+//     query,
+//     Timestamp,
+//     where
+// } from "firebase/firestore";
+// import { db } from "../../../../services/firebase";
 import { ProcessType } from '../../../../models/ThemisTypes';
 import { useRouter } from "next/router";
 import { Search2Icon, SearchIcon } from "@chakra-ui/icons";
 
 const AnalystCreate: NextPage = () => {
-    const database = db;
+    // const database = db;
     // const proccessCollection = collection(database, 'proccess');
     const toast = useToast();
     const {isAuthenticated, role, user} = useAuth();
@@ -69,11 +69,9 @@ const AnalystCreate: NextPage = () => {
     const [isCourtDeadline, setIsCourtDeadline] = useState(false);
 
     useEffect(() => {
-        if (user != null) {
-            if(upsaRole !='analyst') {
-                route.push('/');
-            }
-        }
+
+        if(upsaRole !== 'analyst')  route.push('/');
+
     }, []);
 
     const verifyDate = async (ref : Date, func: Function) => {

@@ -43,12 +43,13 @@ import BottomNav from '../../Components/BottomNav';
 import {parseCookies} from "nookies";
 import DataTableRCkakra from "../../Components/Table";
 import { UserType } from '../../models/FirebaseTypes';
+import { api } from '../../services/api';
 
 export default function UsersPage({data}: any) {
     const database = db;
     const toast = useToast();
     const route = useRouter();
-    const usersCollection = collection(database, 'users');
+    // const usersCollection = collection(database, 'users');
     const {user, role, isAuthenticated} = useAuth();
     const {isOpen, onOpen, onClose} = useDisclosure();
     const [users, setUsers] = useState<UserType[]>([]);
@@ -67,21 +68,50 @@ export default function UsersPage({data}: any) {
     }, []);
 
     const getUsers = async () => {
-        const usersQuery = query(usersCollection, orderBy('displayName'));
-        const querySnapshot = await getDocs(usersQuery);
+        // const usersQuery = query(usersCollection, orderBy('displayName'));
+        // const querySnapshot = await getDocs(usersQuery);
+
+        console.log('passo 1');
+
+        const processQuery = await api.get('User?size=9000');
+
+        const querySnapshot:UserType[] = processQuery.data.items;
+
+        console.log('processQuery',processQuery);
 
         const result: UserType[] = [];
         querySnapshot.forEach((snapshot) => {
             result.push({
-                uid: snapshot.id,
-                displayName: snapshot.data().displayName,
-                role: snapshot.data().role,
-                email: snapshot.data().email,
-                photoURL: snapshot.data().photoURL,
-                createdAt: snapshot.data().createdAt.toDate().toLocaleDateString('pt-BR')
+                uid: snapshot.uid,
+                displayName: snapshot.displayName,
+                role: snapshot.role,
+                email: snapshot.email,
+                photoURL: snapshot.photoURL,
+                // createdAt: snapshot.createdAt.toDate().toLocaleDateString('pt-BR')
             } as UserType);
         });
         setUsers(result);
+
+
+        // const processQuery = await api.get(`Process?size=9000`).then(processos => {
+            
+        //     const querySnapshot:ProcessType[] = processos.data.items;
+        //     let result: ProcessType[] = [];
+
+        //     querySnapshot.forEach(snapshot => {
+
+        //         const hasAccountability = snapshot?.deadline?.some(x => x.deadline_Interpreter == user?.uid);
+        //         const hasTwoDeadlines = snapshot?.deadline?.length == 2;
+    
+        //         if(hasTwoDeadlines && hasAccountability) {
+        //             result.push(snapshot);
+        //         }
+        //     });
+
+        //     setProcessList(result);
+        // }).catch(function (error) {
+        //     console.log(error);
+        // });
     };
 
     const updateUserModal = (item: UserType) => {
