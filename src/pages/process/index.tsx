@@ -203,22 +203,12 @@ const ProcessListPage: NextPage = () => {
     };
 
     const getAnalystList = async () => {
-        const processQuery = query(collection(database, 'users'));
-        const querySnapshot = await getDocs(processQuery);
-
-        const result:UserType[] = [];
-        querySnapshot.forEach((snapshot) => {
-            result.push({
-                uid: snapshot.id,
-                displayName: snapshot.data().displayName,
-                email: snapshot.data().email,
-                role: snapshot.data().role,
-                photoURL: snapshot.data().photoURL,
-                phoneNumber: snapshot.data().phoneNumber,
-                createdAt: snapshot.data().createdAt
-            } as UserType);
+        const processQuery = await api.get(`User?size=90000`)
+        .then(usuarios => {
+            setAnalystList(usuarios.data.items ?? []);
+        }).catch(function (error) {
+            console.error(error);
         });
-        setAnalystList(result);
     };
 
     const _handleAddProcess = async () => {
@@ -227,10 +217,9 @@ const ProcessListPage: NextPage = () => {
 
     const _handleNewProcess = async () => {
 
-        const snapProcess =  await getDocs(query(proccessCollection,
-                                where('number', '==', processNumber)));
+        const snapProcess = await api.get(`Process/${processNumber}/number`);
 
-        if(!snapProcess.empty) {
+        if(!snapProcess) {
             toast({
                 title: 'Processo',
                 description: "Processo já existe",
@@ -250,7 +239,7 @@ const ProcessListPage: NextPage = () => {
             created_At: new Date()
         } as ProcessType;
 
-        const docRef = await addDoc(proccessCollection, dataProcess);
+        const docRef = await api.put(`Process/${processNumber}`, dataProcess);
 
         if(role === 'analyst') {
 
@@ -273,9 +262,7 @@ const ProcessListPage: NextPage = () => {
                 created_at: Timestamp.now()
             };
     
-            await updateDoc(docRef, {
-                deadline: arrayUnion(dataProcessNode1)
-            });
+            await api.post(`Process/${processNumber}`, dataProcessNode1);
             cleanVariables();
         }
 
@@ -295,7 +282,7 @@ const ProcessListPage: NextPage = () => {
     const _handleEditProcess = async (item: ProcessType) => {
 
         api.get(`themis/process/${item.number}`).then(data => {
-            console.debug('themis-data', data.data);
+            
         }).catch(function (error) {
             // handle error
             console.log(error);
@@ -319,64 +306,66 @@ const ProcessListPage: NextPage = () => {
         }
 
         try {
-            const _processRef = doc(db, `proccess/${editProcess?.uid}`);
+            const _processRef = await api.get(`Process/${editProcess?.uid}/number`);
 
-            const result = await updateDoc(_processRef, {
-                author: editProcess?.author,
-                defendant: editProcess?.defendant,
-                decision: editProcess?.decision,
-                updated_at: editProcess?.updated_At,
-                //accountable: processDaysFinal > 0 ? user?.uid : null,
-                //date_final: prazoDefinitivo ?? null
-            });
+            // const result = await api.post(`Process/${processNumber}`, dataProcessNode1);
 
-            if(role === 'analyst' && processDays > 0) {
-                const dataProcessNode1 = {
-                    deadline_days: processDays,
-                    deadline_date: prazo,
-                    deadline_interpreter: user?.uid,
-                    checked: false,
-                    created_at: Timestamp.now()
-                };
+            // const result = await updateDoc(_processRef, {
+            //     author: editProcess?.author,
+            //     defendant: editProcess?.defendant,
+            //     decision: editProcess?.decision,
+            //     updated_at: editProcess?.updated_At,
+            //     //accountable: processDaysFinal > 0 ? user?.uid : null,
+            //     //date_final: prazoDefinitivo ?? null
+            // });
 
-                if(editProcess?.deadline?.find(x=>x.deadline_Interpreter == user?.uid))
-                {
-                    await updateDoc(_processRef, {
-                        deadline: arrayRemove(editProcess?.deadline?.find(x=>x.deadline_Interpreter == user?.uid))
-                    });
-                }
+            // if(role === 'analyst' && processDays > 0) {
+            //     const dataProcessNode1 = {
+            //         deadline_days: processDays,
+            //         deadline_date: prazo,
+            //         deadline_interpreter: user?.uid,
+            //         checked: false,
+            //         created_at: Timestamp.now()
+            //     };
+
+            //     if(editProcess?.deadline?.find(x=>x.deadline_Interpreter == user?.uid))
+            //     {
+            //         await updateDoc(_processRef, {
+            //             deadline: arrayRemove(editProcess?.deadline?.find(x=>x.deadline_Interpreter == user?.uid))
+            //         });
+            //     }
         
-                await updateDoc(_processRef, {
-                    deadline: arrayUnion(dataProcessNode1)
-                });
-            }
+            //     await updateDoc(_processRef, {
+            //         deadline: arrayUnion(dataProcessNode1)
+            //     });
+            // }
 
-            if(role ==='avocado' && processDaysFinal > 0) {
-                const deadlines = editProcess?.deadline;
+            // if(role ==='avocado' && processDaysFinal > 0) {
+            //     const deadlines = editProcess?.deadline;
 
-                deadlines?.forEach(async element => {
-                    await updateDoc(_processRef, {
-                        deadline: arrayRemove(element)
-                    });
+            //     deadlines?.forEach(async element => {
+            //         await updateDoc(_processRef, {
+            //             deadline: arrayRemove(element)
+            //         });
 
-                    await updateDoc(_processRef, {
-                        deadline: arrayUnion({...element,
-                            ['deadline_days']:processDaysFinal,
-                            ['deadline_date']:prazoDefinitivo,
-                            ['checked']:true})
-                    });
-                });
-            }
+            //         await updateDoc(_processRef, {
+            //             deadline: arrayUnion({...element,
+            //                 ['deadline_days']:processDaysFinal,
+            //                 ['deadline_date']:prazoDefinitivo,
+            //                 ['checked']:true})
+            //         });
+            //     });
+            // }
 
-            await getProcess();
+            // await getProcess();
 
-            toast({
-                title: 'Processo',
-                description: "Processo alterado com sucesso",
-                status: 'success',
-                duration: 9000,
-                isClosable: true,
-            });
+            // toast({
+            //     title: 'Processo',
+            //     description: "Processo alterado com sucesso",
+            //     status: 'success',
+            //     duration: 9000,
+            //     isClosable: true,
+            // });
 
         } catch (error) {
             console.log(error);
@@ -396,8 +385,7 @@ const ProcessListPage: NextPage = () => {
 
     const _handleDeleteProcess = async () => {
         try {
-            const _processRef = doc(db, `proccess/${editProcess?.uid}`);
-            await deleteDoc(_processRef);
+            await api.delete(`Process/${editProcess?.uid}`);
 
             toast({
                 title: 'Processo',
