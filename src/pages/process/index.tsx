@@ -47,7 +47,7 @@ import React, {
 import BottomNav from '../../Components/BottomNav';
 import NavBar from '../../Components/NavBar';
 import {useAuth} from '../../Contexts/AuthContext';
-import {db} from '../../services/firebase';
+// import {db} from '../../services/firebase';
 import {parseCookies} from "nookies";
 import InputMask from 'react-input-mask';
 import DataTableRCkakra from "../../Components/Table";
@@ -57,8 +57,8 @@ import { UserType } from '../../models/FirebaseTypes';
 import { useRouter } from 'next/router';
 
 const ProcessListPage: NextPage = () => {
-    const database = db;
-    const proccessCollection = collection(database, 'proccess');
+    // const database = db;
+    // const proccessCollection = collection(database, 'proccess');
     const {user, role, login} = useAuth();
     const {isOpen, onOpen, onClose} = useDisclosure();
     const {isOpen: isOpenEdit, onOpen: onOpenEdit, onClose: onCloseEdit} = useDisclosure();
@@ -93,7 +93,7 @@ const ProcessListPage: NextPage = () => {
         // const processQuery = query(proccessCollection, where('active', '==', true));
         // const querySnapshot = await getDocs(processQuery);
 
-        const processQuery = await api.get('Process?size=9000')
+        const processQuery = await api.get('Process?size=90000')
         .then(data => {
             const querySnapshot: any[] = data.data.items;
 

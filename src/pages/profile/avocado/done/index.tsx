@@ -81,7 +81,7 @@ const AvocadoDone: NextPage = () => {
         // const processQuery = query(proccessCollection, where('active', '==', true), where('accountable', '==', user?.uid));
         // const querySnapshot = await getDocs(processQuery);
 
-        const processQuery = await api.get(`Process?size=9000`).then(processos => {
+        const processQuery = await api.get(`Process?size=90000`).then(processos => {
             
             const querySnapshot:ProcessType[] = (processos.data.items as ProcessType[]).filter(item => item.accountable == user?.uid);
             let result: ProcessType[] = [];
@@ -106,7 +106,7 @@ const AvocadoDone: NextPage = () => {
 
     const getAvocadoList = async () => {
 
-        const processQuery = await api.get(`User?size=9000`)
+        const processQuery = await api.get(`User?size=90000`)
         .then(usuarios => {
 
             setAvocadoList(usuarios.data.items ?? []);

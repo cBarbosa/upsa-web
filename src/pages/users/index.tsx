@@ -71,29 +71,25 @@ export default function UsersPage({data}: any) {
         // const usersQuery = query(usersCollection, orderBy('displayName'));
         // const querySnapshot = await getDocs(usersQuery);
 
-        console.log('passo 1');
-
-        const processQuery = await api.get('User?size=9000');
+        const processQuery = await api.get('User?size=90000');
 
         const querySnapshot:UserType[] = processQuery.data.items;
 
-        console.log('processQuery',processQuery);
-
-        const result: UserType[] = [];
-        querySnapshot.forEach((snapshot) => {
-            result.push({
-                uid: snapshot.uid,
-                displayName: snapshot.displayName,
-                role: snapshot.role,
-                email: snapshot.email,
-                photoURL: snapshot.photoURL,
-                // createdAt: snapshot.createdAt.toDate().toLocaleDateString('pt-BR')
-            } as UserType);
-        });
-        setUsers(result);
+        // const result: UserType[] = [];
+        // querySnapshot.forEach((snapshot) => {
+        //     result.push({
+        //         uid: snapshot.uid,
+        //         displayName: snapshot.displayName,
+        //         role: snapshot.role,
+        //         email: snapshot.email,
+        //         photoURL: snapshot.photoURL,
+        //         // createdAt: snapshot.createdAt.toDate().toLocaleDateString('pt-BR')
+        //     } as UserType);
+        // });
+        setUsers(querySnapshot);
 
 
-        // const processQuery = await api.get(`Process?size=9000`).then(processos => {
+        // const processQuery = await api.get(`Process?size=90000`).then(processos => {
             
         //     const querySnapshot:ProcessType[] = processos.data.items;
         //     let result: ProcessType[] = [];
