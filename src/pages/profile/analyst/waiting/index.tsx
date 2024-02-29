@@ -445,7 +445,7 @@ const AnalystWaiting: NextPage = () => {
         _internalDate?: string | null,
         _courtDate?: string | null) => {
         
-        const themisAvocadoId = avocadoList.find(x => x.uid == editProcess?.accountable)?.themis_id;
+        const themisAvocadoId = avocadoList.find(x => x.uid == editProcess?.accountable)?.themis_Id;
 
         if(!themisAvocadoId) {
             toast({
@@ -522,7 +522,7 @@ const AnalystWaiting: NextPage = () => {
             "oculto": 0,
             "parteAtiva": "1",
             "advogado": {
-                "id": avocadoList.find(x => x.uid == editProcess?.accountable)?.themis_id ?? null
+                "id": avocadoList.find(x => x.uid == editProcess?.accountable)?.themis_Id ?? null
             },
             "cliente": {
                 "id": 5
