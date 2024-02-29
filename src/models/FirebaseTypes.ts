@@ -6,6 +6,6 @@ export type UserType = {
     role: string;
     photoURL?: string;
     phoneNumber?: string;
-    themis_id?: number;
+    themis_Id?: number;
     createdAt: string;
 };

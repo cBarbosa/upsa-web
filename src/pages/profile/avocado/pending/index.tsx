@@ -120,7 +120,6 @@ const AvocadoPending: NextPage = () => {
 
         const processQuery = await api.get(`User?size=90000`)
         .then(usuarios => {
-
             setAvocadoList(usuarios.data.items ?? []);
         }).catch(function (error) {
             console.error(error);
@@ -229,12 +228,12 @@ const AvocadoPending: NextPage = () => {
                 year: 'numeric',
                 month: '2-digit',
                 day: '2-digit'
-            }) : 'null';
+            }) : null;
             const _courtDate = isCourtDeadline ? courtDate.toLocaleDateString('pt-BR',{
                 year: 'numeric',
                 month: '2-digit',
                 day: '2-digit'
-            }) : 'null';
+            }) : null;
 
             let newDeadlines: DeadLineProcessType[] = [];
 
@@ -281,10 +280,10 @@ const AvocadoPending: NextPage = () => {
     };
 
     const _handleSetFowardProcessOnThemis = async (
-        _internalDate:string,
-        _courtDate:string) => {
-        
-        const themisAvocadoId = avocadoList.find(x => x.uid == editProcess?.accountable)?.themis_id;
+        _internalDate:string | null,
+        _courtDate:string | null) => {
+
+        const themisAvocadoId = avocadoList.find(x => x.uid == editProcess?.accountable)?.themis_Id;
 
         if(!themisAvocadoId) {
             toast({
@@ -520,7 +519,7 @@ const AvocadoPending: NextPage = () => {
                                                         {avocadoList.find(x => x.uid == editProcess?.deadline[0].deadline_Interpreter)?.displayName}
                                                     </AlertTitle>
                                                     <AlertDescription display='block'>
-                                                        {`${editProcess?.deadline[0].deadline_Internal_Date}` == 'null' ? 'Sem Prazo' : editProcess?.deadline[0].deadline_Internal_Date}
+                                                        {`${editProcess?.deadline[0].deadline_Internal_Date}` == null ? 'Sem Prazo' : editProcess?.deadline[0].deadline_Internal_Date}
                                                     </AlertDescription>
                                                 </Box>
                                             </Alert>
@@ -532,7 +531,7 @@ const AvocadoPending: NextPage = () => {
                                                         {avocadoList.find(x => x.uid == editProcess?.deadline[1].deadline_Interpreter)?.displayName}
                                                     </AlertTitle>
                                                     <AlertDescription display='block'>
-                                                        {`${editProcess?.deadline[1].deadline_Internal_Date}` == 'null' ? 'Sem Prazo' : editProcess?.deadline[1].deadline_Internal_Date}
+                                                        {`${editProcess?.deadline[1].deadline_Internal_Date}` == null ? 'Sem Prazo' : editProcess?.deadline[1].deadline_Internal_Date}
                                                     </AlertDescription>
                                                 </Box>
                                             </Alert>
@@ -573,7 +572,7 @@ const AvocadoPending: NextPage = () => {
                                                     {avocadoList.find(x => x.uid == editProcess?.deadline[0].deadline_Interpreter)?.displayName}
                                                 </AlertTitle>
                                                 <AlertDescription display='block'>
-                                                    {`${editProcess?.deadline[0].deadline_Court_Date}` == 'null' ? 'Sem Prazo': editProcess?.deadline[0].deadline_Court_Date}
+                                                    {`${editProcess?.deadline[0].deadline_Court_Date}` == null ? 'Sem Prazo': editProcess?.deadline[0].deadline_Court_Date}
                                                 </AlertDescription>
                                             </Box>
                                         </Alert>
@@ -585,7 +584,7 @@ const AvocadoPending: NextPage = () => {
                                                     {avocadoList.find(x => x.uid == editProcess?.deadline[1].deadline_Interpreter)?.displayName}
                                                 </AlertTitle>
                                                 <AlertDescription display='block'>
-                                                    {`${editProcess?.deadline[1].deadline_Court_Date}` == 'null' ? 'Sem Prazo' : editProcess?.deadline[1].deadline_Court_Date}
+                                                    {`${editProcess?.deadline[1].deadline_Court_Date}` == null ? 'Sem Prazo' : editProcess?.deadline[1].deadline_Court_Date}
                                                 </AlertDescription>
                                             </Box>
                                         </Alert>
@@ -623,7 +622,7 @@ const AvocadoPending: NextPage = () => {
                             </Text>
                         )}
 
-                        {`${editProcess?.date_Final}` != 'null' && (
+                        {editProcess?.date_Final != null && (
                             <Text
                                 fontSize={'0.8rem'}
                                 fontWeight={'bold'}
@@ -660,6 +659,13 @@ const AvocadoPending: NextPage = () => {
                                 })}
                             </Text>
                         )}
+
+                        <Text
+                            fontSize={'0.6rem'}
+                            fontWeight={'light'}
+                        >
+                            {editProcess?.uid}
+                        </Text>
 
                     </ModalBody>
 

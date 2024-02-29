@@ -98,7 +98,7 @@ const AnalystDone: NextPage = () => {
 
             setProcessList(result);
         }).catch(function (error) {
-            console.log(error);
+            console.error(error);
         });
     };
 
@@ -195,7 +195,7 @@ const AnalystDone: NextPage = () => {
             }
             return result.data?.id;
         }).catch(function (error) {
-            console.log(error);
+            console.error(error);
         });
     };
 
@@ -350,8 +350,8 @@ const AnalystDone: NextPage = () => {
                             />
                         </FormControl>
 
-                        {(`${editProcess?.deadline?.find(x=>x.deadline_Interpreter == user?.uid)?.deadline_Internal_Date}` != 'null'
-                            && `${editProcess?.deadline?.find(x=>x.deadline_Interpreter == user?.uid)?.deadline_Court_Date}` != 'null') && (
+                        {(editProcess?.deadline?.find(x=>x.deadline_Interpreter == user?.uid)?.deadline_Internal_Date != null
+                            && editProcess?.deadline?.find(x=>x.deadline_Interpreter == user?.uid)?.deadline_Court_Date != null) && (
                             <Alert status='info' variant='left-accent'>
                                 <AlertIcon />
                                 <Text
@@ -368,8 +368,8 @@ const AnalystDone: NextPage = () => {
                             </Alert>
                         )}
 
-                        {(`${editProcess?.deadline?.find(x=>x.deadline_Interpreter == user?.uid)?.deadline_Internal_Date}` == 'null'
-                            && `${editProcess?.deadline?.find(x=>x.deadline_Interpreter == user?.uid)?.deadline_Court_Date}` == 'null') &&(
+                        {(editProcess?.deadline?.find(x=>x.deadline_Interpreter == user?.uid)?.deadline_Internal_Date == null
+                            && editProcess?.deadline?.find(x=>x.deadline_Interpreter == user?.uid)?.deadline_Court_Date == null) &&(
                             <Alert status='info' variant='left-accent'>
                                 <AlertIcon />
                                 <Text
@@ -396,7 +396,7 @@ const AnalystDone: NextPage = () => {
                                 fontWeight={'bold'}
                                 color={'blue.300'}
                             >
-                                Data Final: {editProcess?.date_Final}
+                                Data Final: {editProcess?.date_Final || editProcess?.date_Final === 'null' ? 'Definido como Sem Prazo' : editProcess?.date_Final}
                             </Text>
                         )}
 
@@ -427,6 +427,12 @@ const AnalystDone: NextPage = () => {
                                 })}
                             </Text>
                         )}
+                        <Text
+                            fontSize={'0.6rem'}
+                            fontWeight={'light'}
+                        >
+                            {editProcess?.uid}
+                        </Text>
 
                     </ModalBody>
 

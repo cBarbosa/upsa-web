@@ -1,4 +1,9 @@
-// import { db } from '../../../../services/firebase';
+import React, {
+    useEffect,
+    useMemo,
+    useState
+} from "react";
+
 import DataTableRCkakra from '../../../../Components/Table';
 import Head from "next/head";
 import {
@@ -34,22 +39,6 @@ import {
     AlertIcon,
     Switch
 } from "@chakra-ui/react";
-import React, {
-    useEffect,
-    useMemo,
-    useState
-} from "react";
-import {
-    arrayRemove,
-    arrayUnion,
-    collection,
-    doc,
-    getDocs,
-    query,
-    Timestamp,
-    updateDoc,
-    where
-} from "firebase/firestore";
 import InputMask from 'react-input-mask';
 import {
     AddIcon,
@@ -68,7 +57,7 @@ const AnalystWaiting: NextPage = () => {
     const route = useRouter();
     // const database = db;
     // const proccessCollection = collection(database, 'proccess');
-    const { isAuthenticated, role, user } = useAuth();
+    const { role, user } = useAuth();
     const [processList, setProcessList] = useState<ProcessType[]>([]);
     const [avocadoList, setAvocadoList] = useState<UserType[]>([]);
     const {isOpen, onOpen, onClose} = useDisclosure();
@@ -105,6 +94,8 @@ const AnalystWaiting: NextPage = () => {
                 const hasAccountability = snapshot?.deadline?.some(x => x.deadline_Interpreter == user?.uid);
                 const hasJustOneDeadline = snapshot?.deadline?.length == 1;
                 const hasTwoDeadlines = snapshot?.deadline?.length == 2;
+
+                console.log('if', {hasAccountability, hasJustOneDeadline, hasTwoDeadlines});
 
                 if(!hasTwoDeadlines
                     && (hasAccountability || (!hasAccountability && hasJustOneDeadline))) {
@@ -182,18 +173,22 @@ const AnalystWaiting: NextPage = () => {
     const _handleEditProcess = async (item: ProcessType) => {
         setIsCourtDeadline(false);
         setEditProcess({...item, ['updated_At']: new Date() });
-        const _strInternalDate = `${item?.deadline?.find(x=>x.deadline_Interpreter == user?.uid)?.deadline_Internal_Date}`;
-        const _strCourtDate = `${item?.deadline?.find(x=>x.deadline_Interpreter == user?.uid)?.deadline_Court_Date}`;
 
-        const _internalDate = _strInternalDate === 'undefined'
+        if(!user) return;
+
+        const _strInternalDate = item?.deadline?.find(x=>x.deadline_Interpreter == user?.uid)?.deadline_Internal_Date;
+        const _strCourtDate = item?.deadline?.find(x=>x.deadline_Interpreter == user?.uid)?.deadline_Court_Date;
+
+        const _internalDate = !_strInternalDate
             ? new Date()
             : new Date(parseInt(_strInternalDate.split('/')[2]), parseInt(_strInternalDate.split('/')[1])-1, parseInt(_strInternalDate.split('/')[0]));
-        const _courtDate = _strCourtDate === 'undefined'
+
+        const _courtDate = !_strCourtDate
             ? new Date()
             : new Date(parseInt(_strCourtDate.split('/')[2]), parseInt(_strCourtDate.split('/')[1])-1, parseInt(_strCourtDate.split('/')[0]));
     
-        if((_strInternalDate != 'null' && _strCourtDate != 'null')
-            && (_strInternalDate != 'undefined' && _strCourtDate != 'undefined')) {
+        if((_strInternalDate != null && _strCourtDate != null)
+            && (_strInternalDate != undefined && _strCourtDate != undefined)) {
             setIsCourtDeadline(true);
         }
 
@@ -335,7 +330,6 @@ const AnalystWaiting: NextPage = () => {
                 editProcess?.deadline.push(dataProcessNode1);
     
                 const result = await api.post(`Process/${editProcess?.uid}`, editProcess).then(update => {
-                    console.log(update);
                     toast({
                         title: 'Processo',
                         description: update.data.message,
@@ -392,7 +386,7 @@ const AnalystWaiting: NextPage = () => {
                 });
             }
         }).catch(function (error) {
-            console.log(error);
+            console.error(error);
         });
     }
 
@@ -443,13 +437,13 @@ const AnalystWaiting: NextPage = () => {
             }
 
         }).catch(function (error) {
-            console.log(error);
+            console.error(error);
         });
     };
 
     const _handleSetFowardProcessOnThemis = async (
-        _internalDate: string | null,
-        _courtDate: string | null) => {
+        _internalDate?: string | null,
+        _courtDate?: string | null) => {
         
         const themisAvocadoId = avocadoList.find(x => x.uid == editProcess?.accountable)?.themis_id;
 
@@ -940,6 +934,13 @@ const AnalystWaiting: NextPage = () => {
                                 })}
                             </Text>
                         )}
+
+                        <Text
+                            fontSize={'0.6rem'}
+                            fontWeight={'light'}
+                        >
+                            {editProcess?.uid}
+                        </Text>
 
                     </ModalBody>
 
