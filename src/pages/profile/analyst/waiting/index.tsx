@@ -241,46 +241,50 @@ const AnalystWaiting: NextPage = () => {
                     return;
                 }
 
-                let _internalDate = editProcess?.deadline[0].deadline_Internal_Date == (!isCourtDeadline ? null : newInternalDate.toLocaleDateString('pt-BR',{
+                const _internalDate = editProcess?.deadline[0].deadline_Internal_Date == (!isCourtDeadline ? null : newInternalDate.toLocaleDateString('pt-BR',{
                     year: 'numeric',
                     month: '2-digit',
                     day: '2-digit'
                 }));
 
-                let _courtDate = editProcess?.deadline[0].deadline_Court_Date == (!isCourtDeadline ? null : newCourtDate.toLocaleDateString('pt-BR',{
+                const _courtDate = editProcess?.deadline[0].deadline_Court_Date == (!isCourtDeadline ? null : newCourtDate.toLocaleDateString('pt-BR',{
                     year: 'numeric',
                     month: '2-digit',
                     day: '2-digit'
                 }));
 
-                const _date1 = `${editProcess?.deadline[0].deadline_Internal_Date}`;
+                const _date1 = editProcess?.deadline[0].deadline_Internal_Date;
                 const _date2 = isCourtDeadline ? newInternalDate.toLocaleDateString('pt-BR',{
                     year: 'numeric',
                     month: '2-digit',
                     day: '2-digit'
-                }) : null;
-                const _court1 = `${editProcess?.deadline[0].deadline_Court_Date}`;
+                }) : undefined;
+                const _court1 = editProcess?.deadline[0].deadline_Court_Date;
                 const _court2 = isCourtDeadline ? newCourtDate.toLocaleDateString('pt-BR',{
                     year: 'numeric',
                     month: '2-digit',
                     day: '2-digit'
-                }) : null;
+                }) : undefined;
 
                 if(!_internalDate || !_courtDate) {
                     await _handleSendMessageDivergentProcessOnThemis(_date1, _date2, _court1, _court2);
                 } else {
-                    _handleSetFowardProcessOnThemis(_date2, _court2).then(result => {
-                        if(!result) {
-                            toast({
-                                title: 'Processo (Themis)',
-                                description: 'Não foi possível distribuir o processo',
-                                status: 'error',
-                                duration: 9000,
-                                isClosable: true,
-                            });
-                            return;
-                        }
-                    });
+                    if(_date2 && _court2) {
+                        // só distribui se as datas estiverem preenchidas
+                        _handleSetFowardProcessOnThemis(_date2, _court2)
+                        .then(result => {
+                            if(!result) {
+                                toast({
+                                    title: 'Processo (Themis)',
+                                    description: 'Não foi possível distribuir o processo',
+                                    status: 'error',
+                                    duration: 9000,
+                                    isClosable: true,
+                                });
+                                return;
+                            }
+                        });
+                    }
                 }
 
                 const dataProcessNode2 = {
@@ -293,7 +297,8 @@ const AnalystWaiting: NextPage = () => {
 
                 editProcess.deadline.push(dataProcessNode2);
 
-                const result = await api.post(`Process/${editProcess.uid}`, editProcess).then(update => {
+                const result = await api.post(`Process/${editProcess.uid}`, editProcess)
+                .then(update => {
                     toast({
                         title: 'Processo',
                         description: update.data.message,
@@ -311,12 +316,12 @@ const AnalystWaiting: NextPage = () => {
                         year: 'numeric',
                         month: '2-digit',
                         day: '2-digit'
-                    }) : null,
+                    }) : undefined,
                     deadline_Court_Date: isCourtDeadline ? courtDate.toLocaleDateString('pt-BR',{
                         year: 'numeric',
                         month: '2-digit',
                         day: '2-digit'
-                    }) : null,
+                    }) : undefined,
                     deadline_Interpreter: user?.uid,
                     checked: false,
                     created_At: _nodeProcessRef?.created_At ?? new Date(),
@@ -360,10 +365,10 @@ const AnalystWaiting: NextPage = () => {
     };
 
     const _handleSendMessageDivergentProcessOnThemis = async(
-        _date1:string | null,
-        _date2: string | null,
-        _court1:string | null,
-        _court2: string | null) => {
+        _date1?:string,
+        _date2?: string,
+        _court1?:string,
+        _court2?: string) => {
 
         const _mensagem = {
             'ProcessNumber': editProcess?.number,
@@ -374,8 +379,8 @@ const AnalystWaiting: NextPage = () => {
             'Observation': editProcess?.decision
         };
 
-        return api.post(`message/notify-avocado`, _mensagem).then(result =>
-        {
+        return api.post(`message/notify-avocado`, _mensagem)
+        .then(result => {
             if(result.data) {
                 toast({
                     title: 'Processo',
@@ -442,8 +447,8 @@ const AnalystWaiting: NextPage = () => {
     };
 
     const _handleSetFowardProcessOnThemis = async (
-        _internalDate?: string | null,
-        _courtDate?: string | null) => {
+        _internalDate: string,
+        _courtDate: string) => {
         
         const themisAvocadoId = avocadoList.find(x => x.uid == editProcess?.accountable)?.themis_Id;
 
@@ -459,8 +464,8 @@ const AnalystWaiting: NextPage = () => {
         }
 
         const _foward = {
-            "data": _internalDate ?? 'Sem Prazo',
-            "dataJudicial": _courtDate ?? 'Sem Prazo',
+            "data": _internalDate,
+            "dataJudicial": _courtDate,
             "descricao": editProcess?.decision,
             "advogado": {
                "id": themisAvocadoId
@@ -468,7 +473,7 @@ const AnalystWaiting: NextPage = () => {
         };
 
         return api.put(`themis/process/add-foward/${editProcess?.number}`, _foward)
-        .then(result => {
+            .then(result => {
             if(result.data) {
                 toast({
                     title: 'Processo (Themis)',
