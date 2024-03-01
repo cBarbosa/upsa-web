@@ -188,53 +188,52 @@ const AvocadoPending: NextPage = () => {
 
     const _handleUpdateProcess = async () => {
 
+        if(isCourtDeadline && (internalDate <= new Date())) {
+            toast({
+                title: 'Processo',
+                description: "O Prazo Interno deve ser maior que a data atual",
+                status: 'error',
+                duration: 9000,
+                isClosable: true,
+            });
+            return;
+        }
+
+        if(isCourtDeadline && (courtDate <= internalDate)) {
+            toast({
+                title: 'Processo',
+                description: "O Prazo judicial deve ser maior que o Prazo Interno",
+                status: 'error',
+                duration: 9000,
+                isClosable: true,
+            });
+            return;
+        }
+
+        if(editProcess?.decision == '') {
+            toast({
+                title: 'Processo',
+                description: 'Necessário informar a descrição do processo judicial',
+                status: 'error',
+                duration: 9000,
+                isClosable: true,
+            });
+            return;
+        }
+
+        const _internalDate = isCourtDeadline ? internalDate.toLocaleDateString('pt-BR',{
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit'
+        }) : null;
+        const _courtDate = isCourtDeadline ? courtDate.toLocaleDateString('pt-BR',{
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit'
+        }) : null;
+
         try {
             // const _processRef = doc(db, `proccess/${editProcess?.uid}`);
-
-            if(isCourtDeadline && (internalDate <= new Date())) {
-                toast({
-                    title: 'Processo',
-                    description: "O Prazo Interno deve ser maior que a data atual",
-                    status: 'error',
-                    duration: 9000,
-                    isClosable: true,
-                });
-                return;
-            }
-    
-            if(isCourtDeadline && (courtDate <= internalDate)) {
-                toast({
-                    title: 'Processo',
-                    description: "O Prazo judicial deve ser maior que o Prazo Interno",
-                    status: 'error',
-                    duration: 9000,
-                    isClosable: true,
-                });
-                return;
-            }
-
-            if(editProcess?.decision == '') {
-                toast({
-                    title: 'Processo',
-                    description: 'Necessário informar a descrição do processo judicial',
-                    status: 'error',
-                    duration: 9000,
-                    isClosable: true,
-                });
-                return;
-            }
-
-            const _internalDate = isCourtDeadline ? internalDate.toLocaleDateString('pt-BR',{
-                year: 'numeric',
-                month: '2-digit',
-                day: '2-digit'
-            }) : null;
-            const _courtDate = isCourtDeadline ? courtDate.toLocaleDateString('pt-BR',{
-                year: 'numeric',
-                month: '2-digit',
-                day: '2-digit'
-            }) : null;
-
             let newDeadlines: DeadLineProcessType[] = [];
 
             editProcess?.deadline?.forEach(element => {
@@ -244,18 +243,32 @@ const AvocadoPending: NextPage = () => {
             editProcess!.deadline = [];
             editProcess!.deadline = newDeadlines;
 
-            const result = await api.post(`Process/${editProcess?.uid}`, {...editProcess, 'date_final': _courtDate ?? 'Sem Prazo'}).then(async update => {
+            const result = await api.post(`Process/${editProcess?.uid}`, {...editProcess, 'date_final': _courtDate ?? 'Sem Prazo'})
+            .then(async update => {
 
-                const forwardResult = await _handleSetFowardProcessOnThemis(_internalDate, _courtDate).then(themisResult => {
-                    toast({
-                        title: 'Processo',
-                        description: 'Processo distribuído com sucesso',
-                        status: 'success',
-                        duration: 9000,
-                        isClosable: true,
+
+                if(_internalDate !== null && _courtDate !== null)
+                {
+                    const forwardResult = await _handleSetFowardProcessOnThemis(_internalDate, _courtDate)
+                    .then(themisResult => {
+                        toast({
+                            title: 'Processo',
+                            description: 'Processo distribuído com sucesso',
+                            status: 'success',
+                            duration: 9000,
+                            isClosable: true,
+                        });
+                    }).catch(function (error) {
+                        console.error(error);
                     });
-                }).catch(function (error) {
-                    console.error(error);
+                }
+
+                toast({
+                    title: 'Processo',
+                    description: 'Processo atualizado com sucesso',
+                    status: 'success',
+                    duration: 9000,
+                    isClosable: true,
                 });
 
             }).catch(function (error) {
@@ -263,7 +276,7 @@ const AvocadoPending: NextPage = () => {
             });
 
         } catch (error) {
-            console.log(error);
+            console.error(error);
 
             toast({
                 title: 'Processo',
@@ -280,8 +293,8 @@ const AvocadoPending: NextPage = () => {
     };
 
     const _handleSetFowardProcessOnThemis = async (
-        _internalDate:string | null,
-        _courtDate:string | null) => {
+        _internalDate:string,
+        _courtDate:string) => {
 
         const themisAvocadoId = avocadoList.find(x => x.uid == editProcess?.accountable)?.themis_Id;
 
@@ -297,8 +310,8 @@ const AvocadoPending: NextPage = () => {
         }
 
         const _foward = {
-            "data": _internalDate ?? 'Sem Prazo',
-            "dataJudicial": _courtDate ?? 'Sem Prazo',
+            "data": _internalDate,
+            "dataJudicial": _courtDate,
             "descricao": editProcess?.decision,
             "advogado": {
                "id": themisAvocadoId

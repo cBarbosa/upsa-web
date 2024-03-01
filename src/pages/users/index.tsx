@@ -118,11 +118,24 @@ export default function UsersPage({data}: any) {
     const _handleUpdateUser = async () => {
 
         try {
-            const _user = doc(db, `users/${editUser?.uid}`);
-
-            await updateDoc(_user, {
+            const _user = await api.post(`User/${editUser?.uid}`, {
                 role: editProfile
-            } as UserType);
+            });
+
+            // const _user = doc(db, `Users/${editUser?.uid}`);
+            // await updateDoc(_user, {
+            //     role: editProfile
+            // } as UserType);
+
+            if(!_user.data.success) {
+                toast({
+                    title: 'Usuário',
+                    description: _user.data.message,
+                    status: 'error',
+                    duration: 9000,
+                    isClosable: true,
+                });
+            }
 
             toast({
                 title: 'Usuário',
@@ -131,7 +144,6 @@ export default function UsersPage({data}: any) {
                 duration: 9000,
                 isClosable: true,
             });
-
             getUsers();
         } catch (error) {
             console.log(error);
@@ -230,7 +242,7 @@ export default function UsersPage({data}: any) {
         return ( <Box display={'flex'} flexDirection={'row'} alignItems={'center'}>
             <Avatar
                 name={user.displayName}
-                src={user.photoURL}
+                src={user.photoUrl}
                 size={'sm'}
             />
             <Text ml={4}>
@@ -240,7 +252,7 @@ export default function UsersPage({data}: any) {
     }
 
     function getUsersFromData() {
-        const arrData: { name: object; email: string; role: string; date: string; edit: object; }[] = []
+        const arrData: { name: object; email: string; role: string; date: string; edit: object; }[] = [];
         users.map(user => {
             arrData.push({
                 name: editNameFromData(user),
@@ -248,9 +260,9 @@ export default function UsersPage({data}: any) {
                 role: roles(user.role),
                 date: user.createdAt,
                 edit: editUserFromData(user)
-            })
-        })
-        return arrData
+            });
+        });
+        return arrData;
     }
 
     const dataTable = useMemo(

@@ -1,8 +1,32 @@
-import { GoogleAuthProvider, onAuthStateChanged, signInWithPopup, signOut, User } from "firebase/auth";
-import { doc, getDoc, serverTimestamp, setDoc } from "firebase/firestore";
-import { createContext, useContext, useEffect, useState } from "react";
-import { auth, db } from "../services/firebase";
-import {destroyCookie, setCookie} from 'nookies'
+import {
+    GoogleAuthProvider,
+    onAuthStateChanged,
+    signInWithPopup,
+    signOut,
+    User
+} from "firebase/auth";
+import {
+    doc,
+    getDoc,
+    serverTimestamp,
+    setDoc
+} from "firebase/firestore";
+import {
+    createContext,
+    useContext,
+    useEffect,
+    useState
+} from "react";
+import {
+    auth,
+    db
+} from "../services/firebase";
+import {
+    destroyCookie,
+    setCookie
+} from 'nookies';
+import { api } from "../services/api";
+import { UserType } from "../models/FirebaseTypes";
 
 interface IUser extends User {
     role: string;
@@ -29,14 +53,23 @@ const AuthContext = createContext<IAuthentication>({
     // getDbLoggedProfile: async () => new Promise<string>(() => '')
 });
 
-const AuthProvider = ({ children }: React.PropsWithChildren ) => { // React.PropsWithChildren
-    const [user, setUser] = useState<IUser | null>(null);
-    const [role, setRole] = useState<string>('');
+const AuthProvider = ({ children }: React.PropsWithChildren ) => {
+    const [user, setUser] = useState<UserType | null>(null);
+    const [role, setRole] = useState<string>('none');
 
     useEffect(()=> {
         const unsubscribe = onAuthStateChanged(authentication, (user) => {
-            const res = user as IUser;
-            setUser(res != null ? res : null);
+            
+            if(user) {
+                api.get(`User/${user.uid}`).then(res => {
+                    if(res.data.success) {
+                        setUser(res.data.data);
+                    }
+                });
+            } else {
+                setUser(null);
+            }
+            
         });
         return unsubscribe;
     }, []);
@@ -52,27 +85,51 @@ const AuthProvider = ({ children }: React.PropsWithChildren ) => { // React.Prop
             const { user } = await signInWithPopup(authentication, new GoogleAuthProvider());
             let res = user as IUser;
 
-            const ref = doc(database, 'users', res.uid);
-            const snap = await getDoc(ref);
+            const userDB = await api.get(`User/${user.uid}`);
 
-            if(!snap.exists()) {
-                res.role = 'none';
-                await setDoc(doc(database, 'users', res.uid), {
+            if(!userDB.data.success)    {
+                await api.put(`User/${res.uid}`, {
                     displayName: res.displayName,
                     email: res.email,
                     phoneNumber: res.phoneNumber,
-                    photoURL: res.photoURL,
+                    photoUrl: res.photoURL,
                     providerId: res.providerId,
                     role: res.role,
                     createdAt: serverTimestamp()
                   });
             }
-            res.role = snap.get('role');
-            setRole(snap.get('role'));
-            setUser(res);
-            setCookie(null, 'upsa.role', snap.get('role'), {
+
+            const snap = userDB.data?.data;
+            res.role = snap.role;
+
+            // console.log('userDb', userDB);
+            // console.log('snap', snap);
+            // console.log('role', res.role);
+
+            // const ref = doc(database, 'users', res.uid);
+            // const snap = await getDoc(ref);
+
+            // if(!snap.exists()) {
+            //     res.role = 'none';
+            //     await setDoc(doc(database, 'users', res.uid), {
+            //         displayName: res.displayName,
+            //         email: res.email,
+            //         phoneNumber: res.phoneNumber,
+            //         photoURL: res.photoURL,
+            //         providerId: res.providerId,
+            //         role: res.role,
+            //         createdAt: serverTimestamp()
+            //       });
+            // };
+
+            // res.role = snap.get('role');
+            
+            setRole(res.role);
+            setUser(snap);
+            setCookie(null, 'upsa.role', res.role, {
                 maxAge: 30 * 24 * 60 * 60,
             });
+
         } catch (error) {
             console.error(error);
         }
