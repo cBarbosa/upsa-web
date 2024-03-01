@@ -93,7 +93,7 @@ export default function NavBar() {
                         spacing={4}
                         display={{base: 'none', md: 'flex'}}>
                         {user && (Links.map((link) => (
-                            link.rule.includes(role) && <NavLink key={link.label} href={link.to}>{link.label}</NavLink>
+                            link.rule.includes(user.role) && <NavLink key={link.label} href={link.to}>{link.label}</NavLink>
                         )))}
                     </HStack>
                 </HStack>
@@ -107,7 +107,7 @@ export default function NavBar() {
                             minW={0}>
                             <Avatar
                                 size={'sm'}
-                                src={user?.photoURL ?? ''}
+                                src={user?.photoUrl ?? ''}
                             />
                             <Text>
                                 {user.displayName}

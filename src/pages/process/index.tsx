@@ -99,24 +99,24 @@ const ProcessListPage: NextPage = () => {
 
             const result: ProcessType[] = [];
             querySnapshot.forEach((snapshot) => {
-
-                const itemUpdate = {
-                    // uid: snapshot.id,
-                    number: snapshot.number,
-                    author: snapshot.author,
-                    defendant: snapshot.defendant,
-                    decision: snapshot.decision,
-                    instance: snapshot.instance,
-                    accountable: snapshot.accountable,
-                    deadline: snapshot.deadline,
-                    created_At: snapshot.created_At,
-                    updated_At: snapshot.updated_At,
-                    active: snapshot.active,
-                    date_Final: snapshot.date_Final,
-                    themis_Id: snapshot.themis_Id,
-                } as ProcessType;
-                result.push(itemUpdate);
+                // const itemUpdate = {
+                //     // uid: snapshot.id,
+                //     number: snapshot.number,
+                //     author: snapshot.author,
+                //     defendant: snapshot.defendant,
+                //     decision: snapshot.decision,
+                //     instance: snapshot.instance,
+                //     accountable: snapshot.accountable,
+                //     deadline: snapshot.deadline,
+                //     created_At: snapshot.created_At,
+                //     updated_At: snapshot.updated_At,
+                //     active: snapshot.active,
+                //     date_Final: snapshot.date_Final,
+                //     themis_Id: snapshot.themis_Id,
+                // } as ProcessType;
+                // result.push(itemUpdate);
                 // insertProcessDB(itemUpdate);
+                result.push(snapshot);
             });
 
             setProcess(result);
@@ -285,7 +285,7 @@ const ProcessListPage: NextPage = () => {
             
         }).catch(function (error) {
             // handle error
-            console.log(error);
+            console.error(error);
         });
 
         setEditProcess({...item, ['updated_At']: new Date() });
@@ -631,9 +631,11 @@ const ProcessListPage: NextPage = () => {
                     <ModalCloseButton/>
                     <ModalBody pb={6}>
                         {/* Exibe a mensagem de inconsistência */}
-                        {(editProcess?.deadline !=null
+                        {(editProcess?.deadline
                             && editProcess?.deadline.length == 2
                             // && !editProcess?.deadline?.every((val, i, arr) => val.deadline_days === arr[0].deadline_days)
+                            && !editProcess?.deadline?.every((val, i, arr) => val.deadline_Internal_Date === arr[0].deadline_Internal_Date)
+                            && !editProcess.date_Final
                             ) && (
                             <Alert status='error' variant='left-accent'>
                                 <AlertIcon />
@@ -815,7 +817,7 @@ const ProcessListPage: NextPage = () => {
                                 fontWeight={'bold'}
                                 color={'blue.300'}
                             >
-                                Data Final: {editProcess?.date_Final ?? 'Sem Prazo'}
+                                Data Final: {editProcess?.date_Final || editProcess?.date_Final === 'null' ? 'Sem Prazo' : editProcess?.date_Final}
                             </Text>
                         )}
 
@@ -915,6 +917,12 @@ const ProcessListPage: NextPage = () => {
                             </Text>
                         )}
 
+                        <Text
+                            fontSize={'0.6rem'}
+                            fontWeight={'light'}
+                        >
+                            {editProcess?.uid}
+                        </Text>
 
                     </ModalBody>
 
