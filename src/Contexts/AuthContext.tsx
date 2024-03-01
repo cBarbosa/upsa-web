@@ -33,7 +33,7 @@ interface IUser extends User {
 }
 
 interface IAuthentication {
-    user: IUser | null,
+    user: UserType | null,
     role: string,
     isAuthenticated: boolean,
     login: () => void,
