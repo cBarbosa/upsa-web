@@ -3,6 +3,8 @@ import axios from 'axios';
 function getAPIClient() {
 
     const api = axios.create({
+        // baseURL: 'https://localhost:5001/api',
+        // baseURL: 'https://upsadev-api.azurewebsites.net/api',
         baseURL: 'https://upsa-api.azurewebsites.net/api',
         headers: {
             'Access-Control-Allow-Origin': '*',
