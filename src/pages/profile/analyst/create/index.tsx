@@ -285,14 +285,21 @@ const AnalystCreate: NextPage = () => {
                 });
 
                 if(hasPendingDistribuition) {
+                    // toast({
+                    //     title: 'Processo',
+                    //     description: 'Já existe uma distribuição pendente para este processo',
+                    //     status: 'error',
+                    //     duration: 9000,
+                    //     isClosable: true,
+                    // });
+                    // return;
                     toast({
                         title: 'Processo',
                         description: 'Já existe uma distribuição pendente para este processo',
-                        status: 'error',
+                        status: 'info',
                         duration: 9000,
                         isClosable: true,
                     });
-                    return;
                 }
                 setFormVisible(true);
                 setIsCourtDeadline(false);
