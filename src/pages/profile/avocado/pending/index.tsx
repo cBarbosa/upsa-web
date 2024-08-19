@@ -59,6 +59,7 @@ import { SingleDatepicker } from 'chakra-dayzed-datepicker';
 import { api } from "../../../../services/api";
 import { ProcessType, DeadLineProcessType } from '../../../../models/ThemisTypes';
 import { UserType } from '../../../../models/FirebaseTypes';
+import { optionsLocaleDateString } from "../../analyst/create";
 
 const AvocadoPending: NextPage = () => {
 
@@ -174,13 +175,21 @@ const AvocadoPending: NextPage = () => {
 
         if(isInternalDateConvergent) {
             const _strInternalDate = `${item.deadline[0].deadline_Internal_Date}`;
-            const _internalDate = new Date(parseInt(_strInternalDate.split('/')[2]), parseInt(_strInternalDate.split('/')[1])-1, parseInt(_strInternalDate.split('/')[0]));
+            const _internalDate = new Date(
+                parseInt(_strInternalDate.split('/')[2]),
+                parseInt(_strInternalDate.split('/')[1])-1,
+                parseInt(_strInternalDate.split('/')[0])
+            );
             setInternalDate(_internalDate);
         }
 
         if(isCourtDateConvergent) {
             const _strCourtDate = `${item.deadline[0].deadline_Court_Date}`;
-            const _courtDate = new Date(parseInt(_strCourtDate.split('/')[2]), parseInt(_strCourtDate.split('/')[1])-1, parseInt(_strCourtDate.split('/')[0]));
+            const _courtDate = new Date(
+                parseInt(_strCourtDate.split('/')[2]),
+                parseInt(_strCourtDate.split('/')[1])-1,
+                parseInt(_strCourtDate.split('/')[0])
+            );
             setCourtDate(_courtDate);
         }
         onOpen();
@@ -221,16 +230,8 @@ const AvocadoPending: NextPage = () => {
             return;
         }
 
-        const _internalDate = isCourtDeadline ? internalDate.toLocaleDateString('pt-BR',{
-            year: 'numeric',
-            month: '2-digit',
-            day: '2-digit'
-        }) : null;
-        const _courtDate = isCourtDeadline ? courtDate.toLocaleDateString('pt-BR',{
-            year: 'numeric',
-            month: '2-digit',
-            day: '2-digit'
-        }) : null;
+        const _internalDate = isCourtDeadline ? internalDate.toLocaleDateString('pt-BR', optionsLocaleDateString) : null;
+        const _courtDate = isCourtDeadline ? courtDate.toLocaleDateString('pt-BR', optionsLocaleDateString) : null;
 
         try {
             // const _processRef = doc(db, `proccess/${editProcess?.uid}`);
@@ -246,9 +247,7 @@ const AvocadoPending: NextPage = () => {
             const result = await api.post(`Process/${editProcess?.uid}`, {...editProcess, 'date_final': _courtDate ?? 'Sem Prazo'})
             .then(async update => {
 
-
-                if(_internalDate !== null && _courtDate !== null)
-                {
+                if(_internalDate !== null && _courtDate !== null) {
                     const forwardResult = await _handleSetFowardProcessOnThemis(_internalDate, _courtDate)
                     .then(themisResult => {
                         toast({
@@ -268,7 +267,7 @@ const AvocadoPending: NextPage = () => {
                     description: 'Processo atualizado com sucesso',
                     status: 'success',
                     duration: 9000,
-                    isClosable: true,
+                    isClosable: true
                 });
 
             }).catch(function (error) {
@@ -334,7 +333,7 @@ const AvocadoPending: NextPage = () => {
             console.error(error);
             toast({
                 title: 'Processo (Themis)',
-                description: 'Não foi possível distribuir o processo',
+                description: `Não foi possível distribuir o processo.\n${error}`,
                 status: 'error',
                 duration: 9000,
                 isClosable: true,
@@ -511,11 +510,7 @@ const AvocadoPending: NextPage = () => {
                                         fontSize={'0.8rem'}
                                         color={'GrayText'}
                                     >
-                                        Data Formatada: {internalDate.toLocaleDateString('pt-BR', {
-                                            year: 'numeric',
-                                            month: '2-digit',
-                                            day: '2-digit'
-                                        })}
+                                        Data Formatada: {internalDate.toLocaleDateString('pt-BR', optionsLocaleDateString)}
                                     </Text>
                                     
                                 </FormControl>
@@ -563,11 +558,7 @@ const AvocadoPending: NextPage = () => {
                                         fontSize={'0.8rem'}
                                         color={'GrayText'}
                                     >
-                                        Data Formatada: {courtDate.toLocaleDateString('pt-BR', {
-                                            year: 'numeric',
-                                            month: '2-digit',
-                                            day: '2-digit'
-                                        })}
+                                        Data Formatada: {courtDate.toLocaleDateString('pt-BR', optionsLocaleDateString)}
                                     </Text>
                                     
                                 </FormControl>
