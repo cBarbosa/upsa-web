@@ -21,6 +21,8 @@ export type DeadLineProcessType = {
     deadline_Internal_Date: string;
     deadline_Court_Date: string;
     deadline_Interpreter: string;
+    deadline_Internal_Date_Add?: string,
+    deadline_Court_Date_Add?: string,
     checked: boolean;
     created_At: Date;
     // checked_At: Date;

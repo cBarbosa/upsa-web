@@ -51,6 +51,7 @@ import { SingleDatepicker } from 'chakra-dayzed-datepicker';
 import { api } from '../../../../services/api';
 import { DeadLineProcessType, ProcessType } from '../../../../models/ThemisTypes';
 import { UserType } from '../../../../models/FirebaseTypes';
+import { optionsLocaleDateString } from "../create";
 
 const AnalystWaiting: NextPage = () => {
     const toast = useToast();
@@ -68,6 +69,11 @@ const AnalystWaiting: NextPage = () => {
     const [newInternalDate, setNewInternalDate] = useState(new Date());
     const [newCourtDate, setNewCourtDate] = useState(new Date());
     const [isCourtDeadline, setIsCourtDeadline] = useState(false);
+    const [internalDateAdd, setInternalDateAdd] = useState(new Date());
+    const [courtDateAdd, setCourtDateAdd] = useState(new Date());
+    const [isCourtDeadlineAdd, setIsCourtDeadlineAdd] = useState(false);
+    const [newInternalDateAdd, setNewInternalDateAdd] = useState(new Date());
+    const [newCourtDateAdd, setNewCourtDateAdd] = useState(new Date());
 
     useEffect(() => {
 
@@ -85,7 +91,7 @@ const AnalystWaiting: NextPage = () => {
         // const querySnapshot = await getDocs(processQuery);
 
         const processQuery = await api.get(`Process?size=90000`).then(processos => {
-            
+
             const querySnapshot:ProcessType[] = processos.data.items;
             let result: ProcessType[] = [];
 
@@ -94,8 +100,6 @@ const AnalystWaiting: NextPage = () => {
                 const hasAccountability = snapshot?.deadline?.some(x => x.deadline_Interpreter == user?.uid);
                 const hasJustOneDeadline = snapshot?.deadline?.length == 1;
                 const hasTwoDeadlines = snapshot?.deadline?.length == 2;
-
-                console.log('if', {hasAccountability, hasJustOneDeadline, hasTwoDeadlines});
 
                 if(!hasTwoDeadlines
                     && (hasAccountability || (!hasAccountability && hasJustOneDeadline))) {
@@ -178,6 +182,8 @@ const AnalystWaiting: NextPage = () => {
 
         const _strInternalDate = item?.deadline?.find(x=>x.deadline_Interpreter == user?.uid)?.deadline_Internal_Date;
         const _strCourtDate = item?.deadline?.find(x=>x.deadline_Interpreter == user?.uid)?.deadline_Court_Date;
+        const _strInternalDateAdd = item?.deadline?.find(x=>x.deadline_Interpreter == user?.uid)?.deadline_Internal_Date_Add;
+        const _strCourtDateAdd = item?.deadline?.find(x=>x.deadline_Interpreter == user?.uid)?.deadline_Court_Date_Add;
 
         const _internalDate = !_strInternalDate
             ? new Date()
@@ -186,14 +192,29 @@ const AnalystWaiting: NextPage = () => {
         const _courtDate = !_strCourtDate
             ? new Date()
             : new Date(parseInt(_strCourtDate.split('/')[2]), parseInt(_strCourtDate.split('/')[1])-1, parseInt(_strCourtDate.split('/')[0]));
-    
+
+        const _internalDateAdd = !_strInternalDateAdd
+            ? new Date()
+            : new Date(parseInt(_strInternalDateAdd.split('/')[2]), parseInt(_strInternalDateAdd.split('/')[1])-1, parseInt(_strInternalDateAdd.split('/')[0]));
+
+        const _courtDateAdd = !_strCourtDateAdd
+            ? new Date()
+            : new Date(parseInt(_strCourtDateAdd.split('/')[2]), parseInt(_strCourtDateAdd.split('/')[1])-1, parseInt(_strCourtDateAdd.split('/')[0]));
+
         if((_strInternalDate != null && _strCourtDate != null)
             && (_strInternalDate != undefined && _strCourtDate != undefined)) {
             setIsCourtDeadline(true);
         }
 
+        if((_strInternalDateAdd != null && _strCourtDateAdd != null)
+            && (_strInternalDateAdd != undefined && _strCourtDateAdd != undefined)) {
+            setIsCourtDeadlineAdd(true);
+        }
+
         setInternalDate(_strInternalDate != null ? _internalDate : new Date());
         setCourtDate(_strCourtDate != null ? _courtDate : new Date());
+        setInternalDateAdd(_strInternalDateAdd != null ? _internalDateAdd : new Date());
+        setCourtDateAdd(_strCourtDateAdd != null ? _courtDateAdd : new Date());
         onOpen();
     };
 
@@ -201,14 +222,14 @@ const AnalystWaiting: NextPage = () => {
 
         try {
             // const _processRef = doc(db, `proccess/${editProcess?.uid}`);
-            
+
             const _nodeProcessRef = editProcess?.deadline
                                 ?.find(x=>x.deadline_Interpreter == user?.uid);
 
             {/* Distribuição de processo */}
             if(!_nodeProcessRef) {
 
-                if(!editProcess?.accountable) {
+                if(!editProcess?.accountable && isCourtDeadline) {
                     toast({
                         title: 'Processo',
                         description: 'Escolha um advogado responsável',
@@ -241,35 +262,23 @@ const AnalystWaiting: NextPage = () => {
                     return;
                 }
 
-                const _internalDate = editProcess?.deadline[0].deadline_Internal_Date == (!isCourtDeadline ? null : newInternalDate.toLocaleDateString('pt-BR',{
-                    year: 'numeric',
-                    month: '2-digit',
-                    day: '2-digit'
-                }));
-
-                const _courtDate = editProcess?.deadline[0].deadline_Court_Date == (!isCourtDeadline ? null : newCourtDate.toLocaleDateString('pt-BR',{
-                    year: 'numeric',
-                    month: '2-digit',
-                    day: '2-digit'
-                }));
+                const _internalDate = editProcess?.deadline[0].deadline_Internal_Date == (!isCourtDeadline ? null : newInternalDate.toLocaleDateString('pt-BR', optionsLocaleDateString));
+                const _courtDate = editProcess?.deadline[0].deadline_Court_Date == (!isCourtDeadline ? null : newCourtDate.toLocaleDateString('pt-BR', optionsLocaleDateString));
 
                 const _date1 = editProcess?.deadline[0].deadline_Internal_Date;
-                const _date2 = isCourtDeadline ? newInternalDate.toLocaleDateString('pt-BR',{
-                    year: 'numeric',
-                    month: '2-digit',
-                    day: '2-digit'
-                }) : undefined;
+                const _date2 = isCourtDeadline ? newInternalDate.toLocaleDateString('pt-BR', optionsLocaleDateString) : undefined;
+                const _date3 = isCourtDeadlineAdd ? newInternalDateAdd.toLocaleDateString('pt-BR', optionsLocaleDateString) : undefined;
                 const _court1 = editProcess?.deadline[0].deadline_Court_Date;
-                const _court2 = isCourtDeadline ? newCourtDate.toLocaleDateString('pt-BR',{
-                    year: 'numeric',
-                    month: '2-digit',
-                    day: '2-digit'
-                }) : undefined;
+                const _court2 = isCourtDeadline ? newCourtDate.toLocaleDateString('pt-BR', optionsLocaleDateString) : undefined;
+                const _court3 = isCourtDeadlineAdd ? newCourtDateAdd.toLocaleDateString('pt-BR', optionsLocaleDateString) : undefined;
 
                 if(!_internalDate || !_courtDate) {
+                    console.log('passo 1')
                     await _handleSendMessageDivergentProcessOnThemis(_date1, _date2, _court1, _court2);
                 } else {
+                    console.log('passo 2')
                     if(_date2 && _court2) {
+                        console.log('passo 3')
                         // só distribui se as datas estiverem preenchidas
                         _handleSetFowardProcessOnThemis(_date2, _court2)
                         .then(result => {
@@ -290,14 +299,16 @@ const AnalystWaiting: NextPage = () => {
                 const dataProcessNode2 = {
                     deadline_Internal_Date: _date2,
                     deadline_Court_Date: _court2,
+                    deadline_Internal_Date_Add: _date3,
+                    deadline_Court_Date_Add: _court3,
                     deadline_Interpreter: user?.uid,
                     checked: false,
                     created_At: new Date()
                 } as DeadLineProcessType;
 
-                editProcess.deadline.push(dataProcessNode2);
+                editProcess?.deadline.push(dataProcessNode2);
 
-                const result = await api.post(`Process/${editProcess.uid}`, editProcess)
+                const result = await api.post(`Process/${editProcess?.uid!}`, editProcess)
                 .then(update => {
                     toast({
                         title: 'Processo',
@@ -312,16 +323,10 @@ const AnalystWaiting: NextPage = () => {
             } else { {/* Atualização do processo */}
 
                 const dataProcessNode1 = {
-                    deadline_Internal_Date: isCourtDeadline ? internalDate.toLocaleDateString('pt-BR',{
-                        year: 'numeric',
-                        month: '2-digit',
-                        day: '2-digit'
-                    }) : undefined,
-                    deadline_Court_Date: isCourtDeadline ? courtDate.toLocaleDateString('pt-BR',{
-                        year: 'numeric',
-                        month: '2-digit',
-                        day: '2-digit'
-                    }) : undefined,
+                    deadline_Internal_Date: isCourtDeadline ? internalDate.toLocaleDateString('pt-BR',optionsLocaleDateString) : undefined,
+                    deadline_Court_Date: isCourtDeadline ? courtDate.toLocaleDateString('pt-BR',optionsLocaleDateString) : undefined,
+                    deadline_Internal_Date_Add: isCourtDeadlineAdd ? internalDateAdd.toLocaleDateString('pt-BR',optionsLocaleDateString) : undefined,
+                    deadline_Court_Date_Add: isCourtDeadlineAdd ? courtDateAdd.toLocaleDateString('pt-BR',optionsLocaleDateString) : undefined,
                     deadline_Interpreter: user?.uid,
                     checked: false,
                     created_At: _nodeProcessRef?.created_At ?? new Date(),
@@ -334,7 +339,8 @@ const AnalystWaiting: NextPage = () => {
                 editProcess?.deadline.splice(index, 1);
                 editProcess?.deadline.push(dataProcessNode1);
     
-                const result = await api.post(`Process/${editProcess?.uid}`, editProcess).then(update => {
+                const result = await api.post(`Process/${editProcess?.uid}`, editProcess)
+                    .then(update => {
                     toast({
                         title: 'Processo',
                         description: update.data.message,
@@ -449,7 +455,7 @@ const AnalystWaiting: NextPage = () => {
     const _handleSetFowardProcessOnThemis = async (
         _internalDate: string,
         _courtDate: string) => {
-        
+
         const themisAvocadoId = avocadoList.find(x => x.uid == editProcess?.accountable)?.themis_Id;
 
         if(!themisAvocadoId) {
@@ -613,18 +619,41 @@ const AnalystWaiting: NextPage = () => {
         setNewCourtDate(new Date());
 
         setIsCourtDeadline(false);
+        setIsCourtDeadlineAdd(false);
     }
 
-    const verifyDate = async (ref : Date, func: Function) => {
-        if(ref < new Date()) {
+    const verifyDate = async (ref: Date, func: Function, ref2: Date | undefined = undefined) => {
+
+        const dateCompare = new Date();
+        dateCompare.setHours(0, 0, 0, 0);
+
+        if(dateCompare > ref) {
             toast({
                 title: 'Processo',
-                description: "A data informada deve ser maior que hoje!",
+                description: "A data informada deve pode ser menor que hoje!",
                 status: 'error',
                 duration: 9000,
                 isClosable: true,
             });
-            func(new Date());
+            func(dateCompare);
+        }
+
+        if(ref2) {
+            const refCompare = new Date(ref2);
+
+            refCompare.setDate(refCompare.getDate() + 2);
+            refCompare.setHours(0, 0, 0, 0);
+
+            if(ref < refCompare) {
+                toast({
+                    title: 'Processo',
+                    description: `A data informada deve ser maior que ${refCompare.toLocaleDateString()}!`,
+                    status: 'error',
+                    duration: 9000,
+                    isClosable: true,
+                });
+                func(refCompare);
+            }
         }
     };
 
@@ -779,6 +808,7 @@ const AnalystWaiting: NextPage = () => {
 
                         {/* Visualização das informações permitindo nova inserção */}
                         {!editProcess?.deadline?.find(x=>x.deadline_Interpreter == user?.uid) && !editProcess?.date_Final && (
+                            <>
                             <Flex hidden={!isCourtDeadline}>
                                 <Box
                                     padding = {2}
@@ -794,11 +824,7 @@ const AnalystWaiting: NextPage = () => {
                                         fontSize={'0.8rem'}
                                         color={'GrayText'}
                                     >
-                                        Data Formatada: {newInternalDate.toLocaleDateString('pt-BR',{
-                                            year: 'numeric',
-                                            month: '2-digit',
-                                            day: '2-digit'
-                                        })}
+                                        Data Formatada: {newInternalDate.toLocaleDateString('pt-BR', optionsLocaleDateString)}
                                     </Text>
                                     
                                 </FormControl>
@@ -809,28 +835,80 @@ const AnalystWaiting: NextPage = () => {
                                     <FormLabel>Prazo Judicial</FormLabel>
                                     <SingleDatepicker
                                         date={newCourtDate}
-                                        onDateChange={(date:Date) => [setNewCourtDate(date), verifyDate(date, setNewCourtDate)]}
+                                        onDateChange={(date:Date) => [setNewCourtDate(date), verifyDate(date, setNewCourtDate, newInternalDate)]}
                                     />
                                     <Text
                                         fontSize={'0.8rem'}
                                         color={'GrayText'}
                                     >
-                                        Data Formatada: {newCourtDate.toLocaleDateString('pt-BR',{
-                                            year: 'numeric',
-                                            month: '2-digit',
-                                            day: '2-digit'
-                                        })}
+                                        Data Formatada: {newCourtDate.toLocaleDateString('pt-BR', optionsLocaleDateString)}
                                     </Text>
                                 </FormControl>
                                 </Box>
                                 
                             </Flex>
+
+                            <Flex
+                                justify="center"
+                                align="center"
+                                padding={5}
+                                hidden={!isCourtDeadline}
+                            >
+                                <FormLabel htmlFor="date-add">
+                                    Este processo tem prazo judicial adicional?
+                                </FormLabel>
+                                <Switch
+                                    id="date-add"
+                                    defaultIsChecked={isCourtDeadlineAdd}
+                                    onChange={event => setIsCourtDeadlineAdd(event.target.checked)}
+                                />
+                            </Flex>
+
+                            <Flex hidden={!isCourtDeadlineAdd}>
+                                <Box
+                                    padding = {2}
+                                    paddingRight= {10}
+                                >
+                                <FormControl>
+                                    <FormLabel>Prazo Interno adicional</FormLabel>
+                                    <SingleDatepicker
+                                        date={newInternalDateAdd}
+                                        onDateChange={(date:Date) => [setNewInternalDateAdd(date), verifyDate(date, setNewInternalDateAdd)]}
+                                    />
+                                    <Text
+                                        fontSize={'0.8rem'}
+                                        color={'GrayText'}
+                                    >
+                                        Data Formatada: {newInternalDateAdd.toLocaleDateString('pt-BR', optionsLocaleDateString)}
+                                    </Text>
+
+                                </FormControl>
+                                </Box>
+                                
+                                <Box padding = {2}>
+                                <FormControl>
+                                    <FormLabel>Prazo Judicial</FormLabel>
+                                    <SingleDatepicker
+                                        date={newCourtDateAdd}
+                                        onDateChange={(date:Date) => [setNewCourtDate(date), verifyDate(date, setNewCourtDate, newInternalDateAdd)]}
+                                    />
+                                    <Text
+                                        fontSize={'0.8rem'}
+                                        color={'GrayText'}
+                                    >
+                                        Data Formatada: {newCourtDateAdd.toLocaleDateString('pt-BR', optionsLocaleDateString)}
+                                    </Text>
+                                </FormControl>
+                                </Box>
+                                
+                            </Flex>
+                            </>
                         )}
 
                         {/* Escolhe o advogado responsável, somente se for o segundo analista */}
                         {(editProcess?.deadline?.length == 1)
                             && !editProcess?.deadline?.find(x=>x.deadline_Interpreter == user?.uid)
-                        &&(
+                        && isCourtDeadline &&(
                         <FormControl mt={4}>
                             <FormLabel>Responsável</FormLabel>
                             <Select
@@ -856,6 +934,7 @@ const AnalystWaiting: NextPage = () => {
 
                         {/* Visualização das informações permitindo a edição */}
                         {editProcess?.deadline?.find(x=>x.deadline_Interpreter == user?.uid) && !editProcess?.date_Final && (
+                            <>
                             <Flex hidden={!isCourtDeadline}>
                                 <Box padding = {10}>
                                 <FormControl>
@@ -891,6 +970,59 @@ const AnalystWaiting: NextPage = () => {
                                 </Box>
                                 
                             </Flex>
+
+                            <Flex
+                                justify="center"
+                                align="center"
+                                padding={5}
+                                hidden={!isCourtDeadline}
+                            >
+                                <FormLabel htmlFor="date-add">
+                                    Este processo tem prazo judicial adicional?
+                                </FormLabel>
+                                <Switch
+                                    id="date-add"
+                                    defaultIsChecked={isCourtDeadlineAdd}
+                                    onChange={event => setIsCourtDeadlineAdd(event.target.checked)}
+                                />
+                            </Flex>
+
+                            <Flex hidden={!isCourtDeadlineAdd}>
+                                <Box padding = {10}>
+                                <FormControl>
+                                    <FormLabel>Prazo Interno adicional</FormLabel>
+                                    <SingleDatepicker
+                                        date={internalDateAdd}
+                                        onDateChange={(date:Date) => [setInternalDateAdd(date), verifyDate(date, setInternalDateAdd)]}
+                                    />
+                                    <Text
+                                        fontSize={'0.8rem'}
+                                        color={'GrayText'}
+                                    >
+                                        Data Formatada: {editProcess?.deadline?.find(x=>x.deadline_Interpreter == user?.uid)?.deadline_Internal_Date_Add}
+                                    </Text>
+                                    
+                                </FormControl>
+                                </Box>
+
+                                <Box padding = {10}>
+                                <FormControl>
+                                    <FormLabel>Prazo Judicial adicional</FormLabel>
+                                    <SingleDatepicker
+                                        date={courtDateAdd}
+                                        onDateChange={(date:Date) => [setCourtDateAdd(date), verifyDate(date, setCourtDateAdd, internalDateAdd)]}
+                                    />
+                                    <Text
+                                        fontSize={'0.8rem'}
+                                        color={'GrayText'}
+                                    >
+                                        Data Formatada: {editProcess?.deadline?.find(x=>x.deadline_Interpreter == user?.uid)?.deadline_Court_Date_Add}
+                                    </Text>
+                                </FormControl>
+                                </Box>
+
+                            </Flex>
+                            </>
                         )}
 
                         {editProcess?.accountable && (
@@ -992,4 +1124,4 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
     return {
         props: {}
     };
-}
+};

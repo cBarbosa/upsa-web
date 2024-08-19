@@ -47,6 +47,12 @@ import { ProcessType } from '../../../../models/ThemisTypes';
 import { useRouter } from "next/router";
 import { Search2Icon, SearchIcon } from "@chakra-ui/icons";
 
+export const optionsLocaleDateString = {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+} as Intl.DateTimeFormatOptions;
+
 const AnalystCreate: NextPage = () => {
     // const database = db;
     // const proccessCollection = collection(database, 'proccess');
@@ -68,22 +74,49 @@ const AnalystCreate: NextPage = () => {
     const {isOpen, onOpen, onClose} = useDisclosure();
     const [isCourtDeadline, setIsCourtDeadline] = useState(false);
 
+    const [formAdditionalVisible, setFormAdditionalVisible] = useState(false);
+    const [internalDateAdd, setInternalDateAdd] = useState(new Date());
+    const [courtDateAdd, setCourtDateAdd] = useState(new Date());
+    const [isCourtDeadlineAdd, setIsCourtDeadlineAdd] = useState(false);
+
     useEffect(() => {
 
         if(upsaRole !== 'analyst')  route.push('/');
 
     }, []);
 
-    const verifyDate = async (ref : Date, func: Function) => {
-        if(ref < new Date()) {
+    const verifyDate = async (ref: Date, func: Function, ref2: Date | undefined = undefined) => {
+
+        const dateCompare = new Date();
+        dateCompare.setHours(0, 0, 0, 0);
+
+        if(dateCompare > ref) {
             toast({
                 title: 'Processo',
-                description: "A data informada deve ser maior que hoje!",
+                description: "A data informada deve pode ser menor que hoje!",
                 status: 'error',
                 duration: 9000,
                 isClosable: true,
             });
-            func(new Date());
+            func(dateCompare);
+        }
+
+        if(ref2) {
+            const refCompare = new Date(ref2);
+
+            refCompare.setDate(refCompare.getDate() + 2);
+            refCompare.setHours(0, 0, 0, 0);
+
+            if(ref < refCompare) {
+                toast({
+                    title: 'Processo',
+                    description: `A data informada deve ser maior que ${refCompare.toLocaleDateString()}!`,
+                    status: 'error',
+                    duration: 9000,
+                    isClosable: true,
+                });
+                func(refCompare);
+            }
         }
     };
 
@@ -102,8 +135,12 @@ const AnalystCreate: NextPage = () => {
         setProcessDefendant('');
         setInstance('');
 
+        setInternalDateAdd(new Date());
+        setCourtDateAdd(new Date());
+
         setFormVisible(false);
         setIsCourtDeadline(false);
+        setIsCourtDeadlineAdd(false);
     };
 
     const _handleCreateProcess = async () => {
@@ -122,7 +159,10 @@ const AnalystCreate: NextPage = () => {
         //     return;
         // }
 
-        if(isCourtDeadline && (internalDate <= new Date())) {
+        const actualDAte = new Date();
+        actualDAte.setHours(0, 0, 0, 0);
+
+        if(isCourtDeadline && (internalDate <= actualDAte)) {
             toast({
                 title: 'Processo',
                 description: "O Prazo Interno deve ser maior que a data atual",
@@ -145,17 +185,11 @@ const AnalystCreate: NextPage = () => {
         }
 
         const dataProcessNode1 = {
-            deadline_Internal_Date: isCourtDeadline ? internalDate.toLocaleDateString('pt-BR', {
-                year: 'numeric',
-                month: '2-digit',
-                day: '2-digit'
-            }) : null,
-            deadline_Court_Date: isCourtDeadline ? courtDate.toLocaleDateString('pt-BR',{
-                year: 'numeric',
-                month: '2-digit',
-                day: '2-digit'
-            }) : null,
             deadline_Interpreter: user?.uid,
+            deadline_Internal_Date: isCourtDeadline ? internalDate.toLocaleDateString('pt-BR', optionsLocaleDateString) : null,
+            deadline_Court_Date: isCourtDeadline ? courtDate.toLocaleDateString('pt-BR', optionsLocaleDateString) : null,
+            deadline_Internal_Date_Add: isCourtDeadlineAdd ? internalDateAdd.toLocaleDateString('pt-BR', optionsLocaleDateString) : null,
+            deadline_Court_Date_Add: isCourtDeadlineAdd ? courtDateAdd.toLocaleDateString('pt-BR', optionsLocaleDateString) : null,
             checked: false,
             created_At: new Date()
         };
@@ -191,7 +225,7 @@ const AnalystCreate: NextPage = () => {
     const _handleGetProcessOnThemis = async (processNumber:string) => {
 
         api.get(`themis/process/${processNumber}`).then(result => {
-            
+
             if(result.status === 204) {
                 toast({
                     title: 'Processo (Themis)',
@@ -261,6 +295,8 @@ const AnalystCreate: NextPage = () => {
                     return;
                 }
                 setFormVisible(true);
+                setIsCourtDeadline(false);
+                setIsCourtDeadlineAdd(false);
             });
     };
 
@@ -320,10 +356,10 @@ const AnalystCreate: NextPage = () => {
                     </Flex>
 
                     <Flex hidden={!formVisible}>
-                        <FormControl>
-                            <FormLabel>Parte contrária</FormLabel>
+                    <FormControl>
+                            <FormLabel>Parte interessada</FormLabel>
                             <Input
-                                placeholder='Autor'
+                                placeholder='Réu'
                                 variant={'filled'}
                                 onChange={event => setProcessAuthor(event.target.value)}
                                 value={processAuthor}
@@ -331,18 +367,19 @@ const AnalystCreate: NextPage = () => {
                             />
                         </FormControl>
 
-                        <Divider w={5}/>
+                        <Divider w={5} />
 
                         <FormControl>
-                            <FormLabel>Parte interessada</FormLabel>
+                            <FormLabel>Parte contrária</FormLabel>
                             <Input
-                                placeholder='Réu'
+                                placeholder='Autor'
                                 variant={'filled'}
                                 onChange={event => setProcessDefendant(event.target.value)}
                                 value={processDefendant}
                                 readOnly={true}
                             />
                         </FormControl>
+
                     </Flex>
 
                     <FormControl hidden={!formVisible} >
@@ -361,12 +398,12 @@ const AnalystCreate: NextPage = () => {
                         hidden={!formVisible}
                         padding={5}
                     >
-                        <FormLabel htmlFor="email-alerts">
+                        <FormLabel htmlFor="date-court">
                             Este processo tem prazo judicial?
                         </FormLabel>
                         <Switch
-                            id="email-alerts"
-                            defaultIsChecked={isCourtDeadline}
+                            id="date-court"
+                            checked={isCourtDeadline}
                             onChange={event => setIsCourtDeadline(event.target.checked)}
                         />
                     </Flex>
@@ -390,36 +427,87 @@ const AnalystCreate: NextPage = () => {
                                 fontSize={'0.8rem'}
                                 color={'GrayText'}
                             >
-                                Data Formatada: {internalDate.toLocaleDateString('pt-BR',{
-                                    year: 'numeric',
-                                    month: '2-digit',
-                                    day: '2-digit'
-                                })}
+                                Data Formatada: {internalDate.toLocaleDateString('pt-BR', optionsLocaleDateString)}
                             </Text>
-                            
+
                         </FormControl>
                         </Box>
-                        
+
                         <Box padding = {10}>
                         <FormControl>
                             <FormLabel>Prazo Judicial</FormLabel>
                             <SingleDatepicker
                                 date={courtDate}
-                                onDateChange={(date:Date) => [setCourtDate(date), verifyDate(date, setCourtDate)]}
+                                onDateChange={(date:Date) => [setCourtDate(date), verifyDate(date, setCourtDate, internalDate)]}
                             />
                             <Text
                                 fontSize={'0.8rem'}
                                 color={'GrayText'}
                             >
-                                Data Formatada: {courtDate.toLocaleDateString('pt-BR',{
-                                    year: 'numeric',
-                                    month: '2-digit',
-                                    day: '2-digit'
-                                })}
+                                Data Formatada: {courtDate.toLocaleDateString('pt-BR', optionsLocaleDateString)}
                             </Text>
                         </FormControl>
                         </Box>
                         
+                    </Flex>
+
+                    <Flex
+                        justify="center"
+                        align="center"
+                        hidden={!isCourtDeadline}
+                        padding={5}
+                    >
+                        <FormLabel htmlFor="date-add">
+                            Este processo tem prazo judicial adicional?
+                        </FormLabel>
+                        <Switch
+                            id="date-add"
+                            checked={isCourtDeadlineAdd}
+                            onChange={event => setIsCourtDeadlineAdd(event.target.checked)}
+                        />
+                    </Flex>
+
+                    <Flex
+                        hidden={!isCourtDeadlineAdd}
+                        justify={'center'}
+                        align={'center'}
+                    >
+
+                        <Box
+                            padding={10}
+                        >
+                        <FormControl>
+                            <FormLabel>Prazo Interno adicional</FormLabel>
+                            <SingleDatepicker
+                                date={internalDateAdd}
+                                onDateChange={(date:Date) => [setInternalDateAdd(date), verifyDate(date, setInternalDateAdd)]}
+                            />
+                            <Text
+                                fontSize={'0.8rem'}
+                                color={'GrayText'}
+                            >
+                                Data Formatada: {internalDateAdd.toLocaleDateString('pt-BR', optionsLocaleDateString)}
+                            </Text>
+
+                        </FormControl>
+                        </Box>
+
+                        <Box padding={10}>
+                        <FormControl>
+                            <FormLabel>Prazo Judicial adicional</FormLabel>
+                            <SingleDatepicker
+                                date={courtDateAdd}
+                                onDateChange={(date:Date) => [setCourtDateAdd(date), verifyDate(date, setCourtDateAdd, internalDateAdd)]}
+                            />
+                            <Text
+                                fontSize={'0.8rem'}
+                                color={'GrayText'}
+                            >
+                                Data Formatada: {courtDateAdd.toLocaleDateString('pt-BR', optionsLocaleDateString)}
+                            </Text>
+                        </FormControl>
+                        </Box>
+
                     </Flex>
 
                     <Box
@@ -483,7 +571,7 @@ const AnalystCreate: NextPage = () => {
                         </FormControl>
 
                         <FormControl>
-                            <FormLabel>Parte contrária</FormLabel>
+                            <FormLabel>Parte interessada</FormLabel>
                             <Text
                                 fontSize={'0.8rem'}
                                 color={'GrayText'}
@@ -493,7 +581,7 @@ const AnalystCreate: NextPage = () => {
                         </FormControl>
 
                         <FormControl>
-                            <FormLabel>Parte interessada</FormLabel>
+                            <FormLabel>Parte contrária</FormLabel>
                             <Text
                                 fontSize={'0.8rem'}
                                 color={'GrayText'}
