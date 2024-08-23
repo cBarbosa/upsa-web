@@ -74,6 +74,7 @@ const AnalystWaiting: NextPage = () => {
     const [isCourtDeadlineAdd, setIsCourtDeadlineAdd] = useState(false);
     const [newInternalDateAdd, setNewInternalDateAdd] = useState(new Date());
     const [newCourtDateAdd, setNewCourtDateAdd] = useState(new Date());
+    const [loading, setLoading] = useState(false);
 
     useEffect(() => {
 
@@ -87,6 +88,7 @@ const AnalystWaiting: NextPage = () => {
     }, [user]);
 
     const getProcessList = async () => {
+        setLoading(true);
         // const processQuery = query(proccessCollection, where('active', '==', true));
         // const querySnapshot = await getDocs(processQuery);
 
@@ -103,7 +105,7 @@ const AnalystWaiting: NextPage = () => {
                 const hasFinalProcess = snapshot.date_Final !== undefined && snapshot.date_Final !== 'null';
 
                 if(!hasTwoDeadlines
-                    || (hasAccountability || (!hasAccountability && hasJustOneDeadline))) {
+                    && (hasAccountability || (!hasAccountability && hasJustOneDeadline))) {
                     result.push(snapshot);
                 }
 
@@ -124,9 +126,11 @@ const AnalystWaiting: NextPage = () => {
             });
 
             setProcessList(result);
-        }).catch(function (error) {
+        })
+        .catch(function (error) {
             console.error(error);
-        });
+        })
+        .finally(() => setLoading(false));
     };
 
     const getAvocadoList = async () => {
@@ -694,20 +698,23 @@ const AnalystWaiting: NextPage = () => {
                         <RepeatIcon w={16}/>
                     </Button>
                 </Flex>
-                
-                {processList.length > 0 ? (
-                        <Box
-                            py={30}
-                        >
-                            <DataTableRCkakra columns={columns} data={getProcessFromData()}/>
-                        </Box>
-                    ) : (
-                    <Text
-                        py={10}
+
+                {loading && (<div>Carregando ...</div>)}
+
+                {!loading && processList.length > 0 ? (
+                    <Box
+                        py={30}
                     >
-                        Clique no botão atualizar
-                    </Text>
+                        <DataTableRCkakra columns={columns} data={getProcessFromData()}/>
+                    </Box>
+                ) : (
+                <Text
+                    py={10}
+                >
+                    Clique no botão atualizar
+                </Text>
                 )}
+
             </Container>
 
           <BottomNav />
