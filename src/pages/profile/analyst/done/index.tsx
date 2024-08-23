@@ -87,8 +87,8 @@ const AnalystDone: NextPage = () => {
             let result: ProcessType[] = [];
 
             querySnapshot.forEach(snapshot => {
-                const hasAccountability = snapshot?.deadline?.some(x => x.deadline_Interpreter == 'DG4C4zFPkZgcHIddrpGMj4ajVjm2');
-                // const hasAccountability = snapshot?.deadline?.some(x => x.deadline_Interpreter == user?.uid);
+                // const hasAccountability = snapshot?.deadline?.some(x => x.deadline_Interpreter == 'DG4C4zFPkZgcHIddrpGMj4ajVjm2');
+                const hasAccountability = snapshot?.deadline?.some(x => x.deadline_Interpreter == user?.uid);
                 const hasTwoDeadlines = snapshot?.deadline?.length == 2;
                 const hasFinalProcess = snapshot.date_Final !== undefined && snapshot.date_Final !== 'null';
     
