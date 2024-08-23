@@ -65,6 +65,7 @@ const AnalystDone: NextPage = () => {
     const {isOpen, onOpen, onClose} = useDisclosure();
     const [editProcess, setEditProcess] = useState<ProcessType | null>(null);
     const toast = useToast();
+    const [loading, setLoading] = useState(false);
 
     useEffect(() => {
 
@@ -78,11 +79,12 @@ const AnalystDone: NextPage = () => {
     }, [user]);
 
     const getProcessList = async () => {
+        setLoading(true);
         // const processQuery = query(proccessCollection, where('active', '==', true));
         // const querySnapshot = await getDocs(processQuery);
 
         const processQuery = await api.get(`Process?size=90000`).then(processos => {
-            
+
             const querySnapshot:ProcessType[] = processos.data.items;
             let result: ProcessType[] = [];
 
@@ -91,8 +93,8 @@ const AnalystDone: NextPage = () => {
                 const hasAccountability = snapshot?.deadline?.some(x => x.deadline_Interpreter == user?.uid);
                 const hasTwoDeadlines = snapshot?.deadline?.length == 2;
                 const hasFinalProcess = snapshot.date_Final !== undefined && snapshot.date_Final !== 'null';
-    
-                if(hasTwoDeadlines) {
+
+                if(hasTwoDeadlines && hasAccountability) {
                     result.push(snapshot);
                 }
 
@@ -102,9 +104,11 @@ const AnalystDone: NextPage = () => {
             });
 
             setProcessList(result);
-        }).catch(function (error) {
+        })
+        .catch(function (error) {
             console.error(error);
-        });
+        })
+        .finally(() => setLoading(false));
     };
 
     const getAvocadoList = async () => {
@@ -253,7 +257,9 @@ const AnalystDone: NextPage = () => {
                     </Button>
                 </Flex>
 
-                {processList.length > 0 ? (
+                {loading && (<div>Carregando ...</div>)}
+
+                {!loading && processList.length > 0 ? (
                         <Box
                             py={30}
                         >
