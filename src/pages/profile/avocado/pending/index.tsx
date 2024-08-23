@@ -76,6 +76,7 @@ const AvocadoPending: NextPage = () => {
     const [internalDate, setInternalDate] = useState(new Date());
     const [courtDate, setCourtDate] = useState(new Date());
     const [isCourtDeadline, setIsCourtDeadline] = useState(false);
+    const [loading, setLoading] = useState(false);
 
     useEffect(() => {
         if (user != null) {
@@ -89,6 +90,7 @@ const AvocadoPending: NextPage = () => {
     }, []);
 
     const getProcessList = async () => {
+        setLoading(true);
         // const processQuery = query(proccessCollection, where('active', '==', true));
         // const querySnapshot = await getDocs(processQuery);
 
@@ -112,9 +114,11 @@ const AvocadoPending: NextPage = () => {
             });
 
             setProcessList(result);
-        }).catch(function (error) {
+        })
+        .catch(function (error) {
             console.error(error);
-        });
+        })
+        .finally(() => setLoading(false));
     };
 
     const getAvocadoList = async () => {
@@ -409,7 +413,9 @@ const AvocadoPending: NextPage = () => {
                     </Button>
                 </Flex>
 
-                {processList.length > 0 ? (
+                {loading && (<div>Carregando ...</div>)}
+
+                {!loading && processList.length > 0 ? (
                         <Box
                             py={30}
                         >
