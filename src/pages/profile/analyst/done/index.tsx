@@ -363,6 +363,7 @@ const AnalystDone: NextPage = () => {
 
                         {(editProcess?.deadline?.find(x=>x.deadline_Interpreter == user?.uid)?.deadline_Internal_Date != null
                             && editProcess?.deadline?.find(x=>x.deadline_Interpreter == user?.uid)?.deadline_Court_Date != null) && (
+                            <>
                             <Alert status='info' variant='left-accent'>
                                 <AlertIcon />
                                 <Text
@@ -377,6 +378,24 @@ const AnalystDone: NextPage = () => {
                                     Data Judicial: {editProcess?.deadline?.find(x=>x.deadline_Interpreter == user?.uid)?.deadline_Court_Date}
                                 </Text>
                             </Alert>
+                            {editProcess?.deadline?.find(x=>x.deadline_Interpreter == user?.uid)?.deadline_Internal_Date_Add
+                                && editProcess?.deadline?.find(x=>x.deadline_Interpreter == user?.uid)?.deadline_Court_Date_Add && (
+                                <Alert status='info' variant='left-accent'>
+                                    <AlertIcon />
+                                    <Text
+                                        paddingRight={5}
+                                    >
+                                        Interna adicional: {editProcess?.deadline?.find(x=>x.deadline_Interpreter == user?.uid)?.deadline_Internal_Date_Add}
+                                    </Text>
+                                    -
+                                    <Text
+                                        paddingLeft={5}
+                                    >
+                                        Judicial adicional: {editProcess?.deadline?.find(x=>x.deadline_Interpreter == user?.uid)?.deadline_Court_Date_Add}
+                                    </Text>
+                                </Alert>
+                            )}
+                            </>
                         )}
 
                         {(editProcess?.deadline?.find(x=>x.deadline_Interpreter == user?.uid)?.deadline_Internal_Date == null
@@ -407,7 +426,16 @@ const AnalystDone: NextPage = () => {
                                 fontWeight={'bold'}
                                 color={'blue.300'}
                             >
-                                Data Final: {editProcess?.date_Final || editProcess?.date_Final === 'null' ? 'Definido como Sem Prazo' : editProcess?.date_Final}
+                                Data Final: {!editProcess?.date_Final || editProcess?.date_Final === 'null' ? 'Definido como Sem Prazo' : editProcess?.date_Final}
+                            </Text>
+                        )}
+                        {!editProcess?.date_Final && (
+                            <Text
+                                fontSize={'0.8rem'}
+                                fontWeight={'bold'}
+                                color={'blue.600'}
+                            >
+                                Data Final: Sem prazo
                             </Text>
                         )}
 
