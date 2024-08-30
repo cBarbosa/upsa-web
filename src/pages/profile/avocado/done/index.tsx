@@ -339,7 +339,7 @@ const AvocadoDone: NextPage = () => {
                         {editProcess?.deadline[0]?.deadline_Internal_Date != null && (
                             <Text
                                 fontSize={'0.8rem'}
-                                color={'blue.300'}
+                                color={'blue.600'}
                             >
                                 Data Interna {editProcess?.deadline[0]?.deadline_Internal_Date} por {avocadoList.find(x => x.uid == editProcess?.deadline[0]?.deadline_Interpreter)?.displayName}
                             </Text>
@@ -347,9 +347,17 @@ const AvocadoDone: NextPage = () => {
                         {editProcess?.deadline[0]?.deadline_Internal_Date == null && (
                             <Text
                                 fontSize={'0.8rem'}
-                                color={'blue.300'}
+                                color={'blue.600'}
                             >
                                 Data Interna 'Sem Prazo', por {avocadoList.find(x => x.uid == editProcess?.deadline[0]?.deadline_Interpreter)?.displayName}
+                            </Text>
+                        )}
+                        {editProcess?.deadline[0]?.deadline_Internal_Date_Add && (
+                            <Text
+                                fontSize={'0.8rem'}
+                                color={'blue.600'}
+                            >
+                                Interna adicional {editProcess?.deadline[0]?.deadline_Internal_Date_Add} por {avocadoList.find(x => x.uid == editProcess?.deadline[0]?.deadline_Interpreter)?.displayName}
                             </Text>
                         )}
 
@@ -369,11 +377,19 @@ const AvocadoDone: NextPage = () => {
                                 Data Interna 'Sem Prazo', por {avocadoList.find(x => x.uid == editProcess?.deadline[1]?.deadline_Interpreter)?.displayName}
                             </Text>
                         )}
+                        {editProcess?.deadline[1]?.deadline_Internal_Date_Add && (
+                            <Text
+                                fontSize={'0.8rem'}
+                                color={'blue.300'}
+                            >
+                                Interna adicional {editProcess?.deadline[1]?.deadline_Internal_Date_Add} por {avocadoList.find(x => x.uid == editProcess?.deadline[1]?.deadline_Interpreter)?.displayName}
+                            </Text>
+                        )}
 
                         {editProcess?.deadline[0]?.deadline_Court_Date != null && (
                             <Text
                                 fontSize={'0.8rem'}
-                                color={'blue.300'}
+                                color={'blue.600'}
                             >
                                 Data Judicial {editProcess?.deadline[0]?.deadline_Court_Date} por {avocadoList.find(x => x.uid == editProcess?.deadline[0]?.deadline_Interpreter)?.displayName}
                             </Text>
@@ -381,9 +397,17 @@ const AvocadoDone: NextPage = () => {
                         {editProcess?.deadline[0]?.deadline_Court_Date == null && (
                             <Text
                                 fontSize={'0.8rem'}
-                                color={'blue.300'}
+                                color={'blue.600'}
                             >
                                 Data Judicial 'Sem Prazo', por {avocadoList.find(x => x.uid == editProcess?.deadline[0]?.deadline_Interpreter)?.displayName}
+                            </Text>
+                        )}
+                        {editProcess?.deadline[0]?.deadline_Court_Date_Add && (
+                            <Text
+                                fontSize={'0.8rem'}
+                                color={'blue.600'}
+                            >
+                                Judicial adicional {editProcess?.deadline[0]?.deadline_Court_Date_Add} por {avocadoList.find(x => x.uid == editProcess?.deadline[0]?.deadline_Interpreter)?.displayName}
                             </Text>
                         )}
 
@@ -401,6 +425,14 @@ const AvocadoDone: NextPage = () => {
                                 color={'blue.300'}
                             >
                                 Data Judicial 'Sem Prazo', por {avocadoList.find(x => x.uid == editProcess?.deadline[1]?.deadline_Interpreter)?.displayName}
+                            </Text>
+                        )}
+                        {editProcess?.deadline[1]?.deadline_Court_Date_Add && (
+                            <Text
+                                fontSize={'0.8rem'}
+                                color={'blue.300'}
+                            >
+                                Judicial adicional {editProcess?.deadline[1]?.deadline_Court_Date_Add} por {avocadoList.find(x => x.uid == editProcess?.deadline[1]?.deadline_Interpreter)?.displayName}
                             </Text>
                         )}
 
