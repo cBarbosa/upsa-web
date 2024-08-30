@@ -981,7 +981,7 @@ const AnalystWaiting: NextPage = () => {
                                     <FormLabel>Prazo Judicial</FormLabel>
                                     <SingleDatepicker
                                         date={courtDate}
-                                        onDateChange={(date:Date) => [setCourtDate(date), verifyDate(date, setCourtDate)]}
+                                        onDateChange={(date:Date) => [setCourtDate(date), verifyDate(date, setCourtDate, internalDate)]}
                                     />
                                     <Text
                                         fontSize={'0.8rem'}
