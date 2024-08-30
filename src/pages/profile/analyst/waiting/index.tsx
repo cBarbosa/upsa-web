@@ -910,10 +910,10 @@ const AnalystWaiting: NextPage = () => {
                                 
                                 <Box padding = {2}>
                                 <FormControl>
-                                    <FormLabel>Prazo Judicial</FormLabel>
+                                    <FormLabel>Prazo Judicial adicional</FormLabel>
                                     <SingleDatepicker
                                         date={newCourtDateAdd}
-                                        onDateChange={(date:Date) => [setNewCourtDate(date), verifyDate(date, setNewCourtDate, newInternalDateAdd)]}
+                                        onDateChange={(date:Date) => [setNewCourtDate(date), verifyDate(date, setNewCourtDateAdd, newInternalDateAdd)]}
                                     />
                                     <Text
                                         fontSize={'0.8rem'}
