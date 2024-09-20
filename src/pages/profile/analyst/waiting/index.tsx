@@ -913,7 +913,7 @@ const AnalystWaiting: NextPage = () => {
                                     <FormLabel>Prazo Judicial adicional</FormLabel>
                                     <SingleDatepicker
                                         date={newCourtDateAdd}
-                                        onDateChange={(date:Date) => [setNewCourtDate(date), verifyDate(date, setNewCourtDateAdd, newCourtDateAdd)]}
+                                        onDateChange={(date:Date) => [setNewCourtDateAdd(date), verifyDate(date, setNewCourtDateAdd, newCourtDateAdd)]}
                                     />
                                     <Text
                                         fontSize={'0.8rem'}
