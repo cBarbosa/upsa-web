@@ -85,7 +85,10 @@ const AvocadoDone: NextPage = () => {
 
         const processQuery = await api.get(`Process?size=90000`).then(processos => {
             
-            const querySnapshot:ProcessType[] = (processos.data.items as ProcessType[]).filter(item => item.accountable == user?.uid);
+            const querySnapshot:ProcessType[] = (processos.data.items as ProcessType[])
+                .filter(
+                    item => item.accountable == user?.uid
+                );
             let result: ProcessType[] = [];
 
             querySnapshot.forEach(snapshot => {
@@ -93,8 +96,7 @@ const AvocadoDone: NextPage = () => {
                 const hasTwoDeadlines = snapshot?.deadline?.length == 2;
                 const isAlreadyResolved = !!snapshot.date_Final;
 
-            if(hasTwoDeadlines
-                && (hasTwoDeadlines && isAlreadyResolved)) {
+                if(hasTwoDeadlines) {
                     result.push(snapshot);
                 }
             });
