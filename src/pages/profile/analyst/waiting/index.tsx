@@ -49,7 +49,10 @@ import { parseCookies } from 'nookies';
 import { useRouter } from 'next/router';
 import { SingleDatepicker } from 'chakra-dayzed-datepicker';
 import { api } from '../../../../services/api';
-import { DeadLineProcessType, ProcessType } from '../../../../models/ThemisTypes';
+import {
+    DeadLineProcessType,
+    ProcessType
+} from '../../../../models/ThemisTypes';
 import { UserType } from '../../../../models/FirebaseTypes';
 import { optionsLocaleDateString } from "../create";
 
@@ -243,13 +246,14 @@ const AnalystWaiting: NextPage = () => {
         try {
             // const _processRef = doc(db, `proccess/${editProcess?.uid}`);
 
-            const _nodeProcessRef = editProcess?.deadline
-                                ?.find(x=>x.deadline_Interpreter == user?.uid);
+            const _nodeProcessRef = editProcess?.deadline?.find(
+                x => x.deadline_Interpreter == user?.uid
+            );
 
             {/* Distribuição de processo */}
             if(!_nodeProcessRef) {
 
-                if(!editProcess?.accountable && isCourtDeadline) {
+                if(!editProcess?.accountable) {
                     toast({
                         title: 'Processo',
                         description: 'Escolha um advogado responsável',
@@ -286,19 +290,24 @@ const AnalystWaiting: NextPage = () => {
                 const _courtDate = editProcess?.deadline[0].deadline_Court_Date == (!isCourtDeadline ? null : newCourtDate.toLocaleDateString('pt-BR', optionsLocaleDateString));
 
                 const _date1 = editProcess?.deadline[0].deadline_Internal_Date;
-                const _date2 = isCourtDeadline ? newInternalDate.toLocaleDateString('pt-BR', optionsLocaleDateString) : undefined;
-                const _date3 = isCourtDeadlineAdd ? newInternalDateAdd.toLocaleDateString('pt-BR', optionsLocaleDateString) : undefined;
+                const _date2 = isCourtDeadline
+                    ? newInternalDate.toLocaleDateString('pt-BR', optionsLocaleDateString)
+                    : undefined;
+                const _date3 = isCourtDeadlineAdd
+                    ? newInternalDateAdd.toLocaleDateString('pt-BR', optionsLocaleDateString)
+                    : undefined;
                 const _court1 = editProcess?.deadline[0].deadline_Court_Date;
-                const _court2 = isCourtDeadline ? newCourtDate.toLocaleDateString('pt-BR', optionsLocaleDateString) : undefined;
-                const _court3 = isCourtDeadlineAdd ? newCourtDateAdd.toLocaleDateString('pt-BR', optionsLocaleDateString) : undefined;
+                const _court2 = isCourtDeadline
+                    ? newCourtDate.toLocaleDateString('pt-BR', optionsLocaleDateString)
+                    : undefined;
+                const _court3 = isCourtDeadlineAdd
+                    ? newCourtDateAdd.toLocaleDateString('pt-BR', optionsLocaleDateString)
+                    : undefined;
 
                 if(!_internalDate || !_courtDate) {
-                    console.log('passo 1')
                     await _handleSendMessageDivergentProcessOnThemis(_date1, _date2, _court1, _court2);
                 } else {
-                    console.log('passo 2')
                     if(_date2 && _court2) {
-                        console.log('passo 3')
                         // só distribui se as datas estiverem preenchidas
                         _handleSetFowardProcessOnThemis(_date2, _court2)
                         .then(result => {
@@ -353,8 +362,9 @@ const AnalystWaiting: NextPage = () => {
                     updated_At: new Date()
                 } as DeadLineProcessType;
 
-                const index = editProcess!.deadline
-                                .findIndex(d => d.deadline_Interpreter == user?.uid);
+                const index = editProcess!.deadline.findIndex(
+                    d => d.deadline_Interpreter == user?.uid
+                );
 
                 editProcess?.deadline.splice(index, 1);
                 editProcess?.deadline.push(dataProcessNode1);
@@ -406,19 +416,19 @@ const AnalystWaiting: NextPage = () => {
         };
 
         return api.post(`message/notify-avocado`, _mensagem)
-        .then(result => {
-            if(result.data) {
-                toast({
-                    title: 'Processo',
-                    description: "Divergência enviada para os advogados",
-                    status: 'info',
-                    duration: 9000,
-                    isClosable: true,
-                });
-            }
-        }).catch(function (error) {
-            console.error(error);
-        });
+            .then(result => {
+                if(result.data) {
+                    toast({
+                        title: 'Processo',
+                        description: "Divergência enviada para os advogados",
+                        status: 'info',
+                        duration: 9000,
+                        isClosable: true,
+                    });
+                }
+            }).catch(function (error) {
+                console.error(error);
+            });
     }
 
     const _handleGetProcessOnThemis = async (processNumber: string): Promise<boolean> => {
@@ -476,7 +486,9 @@ const AnalystWaiting: NextPage = () => {
         _internalDate: string,
         _courtDate: string) => {
 
-        const themisAvocadoId = avocadoList.find(x => x.uid == editProcess?.accountable)?.themis_Id;
+        const themisAvocadoId = avocadoList.find(
+            x => x.uid == editProcess?.accountable
+        )?.themis_Id;
 
         if(!themisAvocadoId) {
             toast({
@@ -677,6 +689,18 @@ const AnalystWaiting: NextPage = () => {
         }
     };
 
+    const isFormEditable = editProcess?.deadline?.find(
+        x=>x.deadline_Interpreter == user?.uid
+    );
+    const isDeadLineEveryInternal = editProcess?.deadline?.every(
+        (val, i, arr) => val.deadline_Internal_Date == arr[0].deadline_Internal_Date
+    );
+    const isDeadLineEveryCourt = editProcess?.deadline?.every(
+        (val, i, arr) => val.deadline_Court_Date == arr[0].deadline_Court_Date
+    );
+    const formInViewmode = editProcess?.deadline.length === 2;
+    const formInEditmode = editProcess?.deadline.length === 1;
+
     return (
         <>
           <Head>
@@ -731,20 +755,14 @@ const AnalystWaiting: NextPage = () => {
                     <ModalCloseButton/>
                     <ModalBody pb={6}>
 
-                        {(editProcess?.deadline !=null
-                            && editProcess?.deadline.length == 2
-                            && !editProcess?.deadline?.every((val, i, arr) => val.deadline_Internal_Date == arr[0].deadline_Internal_Date)
-                            ) && (
+                        {(formInViewmode && !isDeadLineEveryInternal) && (
                             <Alert status='error' variant='left-accent'>
                                 <AlertIcon />
                                 INCONSISTÊNCIA DE DATAS DIVERGENTES (Data Interna)
                             </Alert>
                         )}
 
-                        {(editProcess?.deadline !=null
-                            && editProcess?.deadline.length == 2
-                            && !editProcess?.deadline?.every((val, i, arr) => val.deadline_Court_Date == arr[0].deadline_Court_Date)
-                            ) && (
+                        {(formInViewmode && !isDeadLineEveryCourt)&& (
                             <Alert status='error' variant='left-accent'>
                                 <AlertIcon />
                                 INCONSISTÊNCIA DE DATAS DIVERGENTES (Data Judicial)
@@ -830,7 +848,7 @@ const AnalystWaiting: NextPage = () => {
                         </Flex>
 
                         {/* Visualização das informações permitindo nova inserção */}
-                        {!editProcess?.deadline?.find(x=>x.deadline_Interpreter == user?.uid) && !editProcess?.date_Final && (
+                        {!isFormEditable && !editProcess?.date_Final && (
                             <>
                             <Flex hidden={!isCourtDeadline}>
                                 <Box
@@ -929,9 +947,7 @@ const AnalystWaiting: NextPage = () => {
                         )}
 
                         {/* Escolhe o advogado responsável, somente se for o segundo analista */}
-                        {(editProcess?.deadline?.length == 1)
-                            && !editProcess?.deadline?.find(x=>x.deadline_Interpreter == user?.uid)
-                        && isCourtDeadline &&(
+                        {formInEditmode && !isFormEditable &&(
                         <FormControl mt={4}>
                             <FormLabel>Responsável</FormLabel>
                             <Select
@@ -956,7 +972,7 @@ const AnalystWaiting: NextPage = () => {
                         )}
 
                         {/* Visualização das informações permitindo a edição */}
-                        {editProcess?.deadline?.find(x=>x.deadline_Interpreter == user?.uid) && !editProcess?.date_Final && (
+                        {isFormEditable && !editProcess?.date_Final && (
                             <>
                             <Flex hidden={!isCourtDeadline}>
                                 <Box padding = {10}>
@@ -970,7 +986,7 @@ const AnalystWaiting: NextPage = () => {
                                         fontSize={'0.8rem'}
                                         color={'GrayText'}
                                     >
-                                        Data Formatada: {editProcess?.deadline?.find(x=>x.deadline_Interpreter == user?.uid)?.deadline_Internal_Date}
+                                        Data Formatada: {isFormEditable?.deadline_Internal_Date}
                                     </Text>
                                     
                                 </FormControl>
@@ -987,7 +1003,7 @@ const AnalystWaiting: NextPage = () => {
                                         fontSize={'0.8rem'}
                                         color={'GrayText'}
                                     >
-                                        Data Formatada: {editProcess?.deadline?.find(x=>x.deadline_Interpreter == user?.uid)?.deadline_Court_Date}
+                                        Data Formatada: {isFormEditable?.deadline_Court_Date}
                                     </Text>
                                 </FormControl>
                                 </Box>
@@ -1022,7 +1038,7 @@ const AnalystWaiting: NextPage = () => {
                                         fontSize={'0.8rem'}
                                         color={'GrayText'}
                                     >
-                                        Data Formatada: {editProcess?.deadline?.find(x=>x.deadline_Interpreter == user?.uid)?.deadline_Internal_Date_Add}
+                                        Data Formatada: {isFormEditable?.deadline_Internal_Date_Add}
                                     </Text>
                                     
                                 </FormControl>
@@ -1039,7 +1055,7 @@ const AnalystWaiting: NextPage = () => {
                                         fontSize={'0.8rem'}
                                         color={'GrayText'}
                                     >
-                                        Data Formatada: {editProcess?.deadline?.find(x=>x.deadline_Interpreter == user?.uid)?.deadline_Court_Date_Add}
+                                        Data Formatada: {isFormEditable?.deadline_Court_Date_Add}
                                     </Text>
                                 </FormControl>
                                 </Box>
@@ -1128,7 +1144,7 @@ const AnalystWaiting: NextPage = () => {
         </>
     );
 }
-  
+
 export default AnalystWaiting;
 
 export const getServerSideProps: GetServerSideProps = async (ctx) => {

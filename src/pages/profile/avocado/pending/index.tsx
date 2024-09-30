@@ -78,16 +78,20 @@ const AvocadoPending: NextPage = () => {
     const [isCourtDeadline, setIsCourtDeadline] = useState(false);
     const [loading, setLoading] = useState(false);
 
+    const [internalDateAdd, setInternalDateAdd] = useState(new Date());
+    const [courtDateAdd, setCourtDateAdd] = useState(new Date());
+    const [isCourtDeadlineAdd, setIsCourtDeadlineAdd] = useState(false);
+
     useEffect(() => {
-        if (user != null) {
-            getProcessList().then(() => {
-                if(upsaRole !='avocado') {
-                    route.push('/');
-                }
-            });
+
+        if (user) {
+            getProcessList();
+            getAvocadoList();
         }
-        getAvocadoList();
-    }, []);
+
+        if(upsaRole !== 'avocado')  route.push('/');
+
+    }, [user]);
 
     const getProcessList = async () => {
         setLoading(true);
@@ -375,16 +379,38 @@ const AvocadoPending: NextPage = () => {
         () => getProcessFromData(), [process],
     );
 
-    const verifyDate = async (ref : Date, func: Function) => {
-        if(ref < new Date()) {
+    const verifyDate = async (ref: Date, func: Function, ref2: Date | undefined = undefined) => {
+
+        const dateCompare = new Date();
+        dateCompare.setHours(0, 0, 0, 0);
+
+        if(dateCompare > ref) {
             toast({
                 title: 'Processo',
-                description: "A data informada deve ser maior que hoje!",
+                description: "A data informada deve pode ser menor que hoje!",
                 status: 'error',
                 duration: 9000,
                 isClosable: true,
             });
-            func(new Date());
+            func(dateCompare);
+        }
+
+        if(ref2) {
+            const refCompare = new Date(ref2);
+
+            refCompare.setDate(refCompare.getDate() + 2);
+            refCompare.setHours(0, 0, 0, 0);
+
+            if(ref < refCompare) {
+                toast({
+                    title: 'Processo',
+                    description: `A data informada deve ser maior que ${refCompare.toLocaleDateString()}!`,
+                    status: 'error',
+                    duration: 9000,
+                    isClosable: true,
+                });
+                func(refCompare);
+            }
         }
     };
 
@@ -393,6 +419,24 @@ const AvocadoPending: NextPage = () => {
         setInternalDate(new Date());
         setCourtDate(new Date());
     }
+
+    const myFormDataEditable = editProcess?.deadline?.find(
+        x=>x.deadline_Interpreter == user?.uid
+    );
+    const isDeadLineEveryInternal = editProcess?.deadline?.every(
+        (val, i, arr) => val.deadline_Internal_Date == arr[0].deadline_Internal_Date
+    );
+    const isDeadLineEveryCourt = editProcess?.deadline?.every(
+        (val, i, arr) => val.deadline_Court_Date == arr[0].deadline_Court_Date
+    );
+    const isDeadLineEveryInternalAdd = editProcess?.deadline?.every(
+        (val, i, arr) => val.deadline_Internal_Date_Add == arr[0].deadline_Internal_Date_Add
+    );
+    const isDeadLineEveryCourtAdd = editProcess?.deadline?.every(
+        (val, i, arr) => val.deadline_Court_Date_Add == arr[0].deadline_Court_Date_Add
+    );
+    const formInViewmode = editProcess?.deadline.length === 2;
+    const formInEditmode = editProcess?.deadline.length === 1;
 
     return (
         <>
@@ -521,10 +565,7 @@ const AvocadoPending: NextPage = () => {
                                     
                                 </FormControl>
 
-                                {(editProcess?.deadline !=null
-                                    && editProcess?.deadline.length == 2
-                                    && !editProcess?.deadline?.every((val, i, arr) => val.deadline_Internal_Date === arr[0].deadline_Internal_Date)
-                                    ) && (
+                                {formInViewmode && !isDeadLineEveryInternal && (
                                         <Stack spacing={1}>
                                             <Alert status='error' variant='left-accent'>
                                                 <AlertIcon />
@@ -550,15 +591,15 @@ const AvocadoPending: NextPage = () => {
                                                 </Box>
                                             </Alert>
                                         </Stack>
-                                    )}
+                                )}
                             </Box>
-                            
+
                             <Box padding = {2} >
                                 <FormControl hidden={!isCourtDeadline}>
                                     <FormLabel>Prazo Judicial</FormLabel>
                                     <SingleDatepicker
                                         date={courtDate}
-                                        onDateChange={(date:Date) => [setCourtDate(date), verifyDate(date, setCourtDate)]}
+                                        onDateChange={(date:Date) => [setCourtDate(date), verifyDate(date, setCourtDate, internalDate)]}
                                     />
                                     <Text
                                         fontSize={'0.8rem'}
@@ -569,11 +610,7 @@ const AvocadoPending: NextPage = () => {
                                     
                                 </FormControl>
 
-                                {(editProcess?.deadline !=null
-                                    && editProcess?.deadline.length == 2
-                                    && !editProcess?.deadline?.every((val, i, arr) => val.deadline_Court_Date === arr[0].deadline_Court_Date)
-                                    ) && (
-
+                                {formInViewmode && !isDeadLineEveryCourt && (
                                     <Stack spacing={1}>
                                         <Alert status='error' variant='left-accent'>
                                             <AlertIcon />
@@ -601,27 +638,135 @@ const AvocadoPending: NextPage = () => {
                                     </Stack>
                                 )}
                             </Box>
-                            
+
                         </Flex>
 
-                        {(editProcess?.deadline?.find(x=>x.deadline_Interpreter == user?.uid)?.deadline_Internal_Date
-                        && editProcess?.deadline?.find(x=>x.deadline_Interpreter == user?.uid)?.deadline_Court_Date) && (
+                        {myFormDataEditable?.deadline_Internal_Date
+                        && myFormDataEditable?.deadline_Court_Date && (
                             <Alert status='info' variant='left-accent'>
                                 <AlertIcon />
                                 <Text
                                     paddingRight={5}
                                 >
-                                    Data Interna: {editProcess?.deadline?.find(x=>x.deadline_Interpreter == user?.uid)?.deadline_Internal_Date}
+                                    Data Interna: {myFormDataEditable?.deadline_Internal_Date}
                                 </Text>
                                 -
                                 <Text
                                     paddingLeft={5}
                                 >
-                                    Data Judicial: {editProcess?.deadline?.find(x=>x.deadline_Interpreter == user?.uid)?.deadline_Court_Date}
+                                    Data Judicial: {myFormDataEditable?.deadline_Court_Date}
                                 </Text>
                             </Alert>
                         )}
 
+                        <Flex
+                            justify="center"
+                            align="center"
+                            hidden={!isCourtDeadline}
+                            padding={5}
+                        >
+                            <FormLabel htmlFor="date-add">
+                                Este processo tem prazo judicial adicional?
+                            </FormLabel>
+                            <Switch
+                                id="date-add"
+                                checked={isCourtDeadlineAdd}
+                                onChange={event => setIsCourtDeadlineAdd(event.target.checked)}
+                            />
+                        </Flex>
+
+                        <Flex>
+                            <Box padding = {2}>
+                                <FormControl hidden={!isCourtDeadlineAdd}>
+                                    <FormLabel>Prazo Interno</FormLabel>
+                                    <SingleDatepicker
+                                        date={internalDateAdd}
+                                        onDateChange={(date:Date) => [setInternalDateAdd(date), verifyDate(date, setInternalDateAdd)]}
+                                    />
+                                    <Text
+                                        fontSize={'0.8rem'}
+                                        color={'GrayText'}
+                                    >
+                                        Data Formatada: {internalDateAdd.toLocaleDateString('pt-BR', optionsLocaleDateString)}
+                                    </Text>
+                                    
+                                </FormControl>
+
+                                {formInViewmode && !isDeadLineEveryInternalAdd && (
+                                        <Stack spacing={1}>
+                                            <Alert status='error' variant='left-accent'>
+                                                <AlertIcon />
+                                                <Box flex='1'>
+                                                    <AlertTitle>
+                                                        {avocadoList.find(x => x.uid == editProcess?.deadline[0].deadline_Interpreter)?.displayName}
+                                                    </AlertTitle>
+                                                    <AlertDescription display='block'>
+                                                        {!editProcess?.deadline[0].deadline_Internal_Date_Add ? 'Sem Prazo' : editProcess?.deadline[0].deadline_Internal_Date_Add}
+                                                    </AlertDescription>
+                                                </Box>
+                                            </Alert>
+
+                                            <Alert status='error' variant='left-accent'>
+                                                <AlertIcon />
+                                                <Box flex='1'>
+                                                    <AlertTitle>
+                                                        {avocadoList.find(x => x.uid == editProcess?.deadline[1].deadline_Interpreter)?.displayName}
+                                                    </AlertTitle>
+                                                    <AlertDescription display='block'>
+                                                        {!editProcess?.deadline[1].deadline_Internal_Date_Add ? 'Sem Prazo' : editProcess?.deadline[1].deadline_Internal_Date_Add}
+                                                    </AlertDescription>
+                                                </Box>
+                                            </Alert>
+                                        </Stack>
+                                )}
+                            </Box>
+
+                            <Box padding = {2} >
+                                <FormControl hidden={!isCourtDeadlineAdd}>
+                                    <FormLabel>Prazo Judicial</FormLabel>
+                                    <SingleDatepicker
+                                        date={courtDateAdd}
+                                        onDateChange={(date:Date) => [setCourtDateAdd(date), verifyDate(date, setCourtDateAdd, internalDateAdd)]}
+                                    />
+                                    <Text
+                                        fontSize={'0.8rem'}
+                                        color={'GrayText'}
+                                    >
+                                        Data Formatada: {courtDateAdd.toLocaleDateString('pt-BR', optionsLocaleDateString)}
+                                    </Text>
+                                    
+                                </FormControl>
+
+                                {formInViewmode && !isDeadLineEveryCourtAdd && (
+                                    <Stack spacing={1}>
+                                        <Alert status='error' variant='left-accent'>
+                                            <AlertIcon />
+                                            <Box flex='1'>
+                                                <AlertTitle>
+                                                    {avocadoList.find(x => x.uid == editProcess?.deadline[0].deadline_Interpreter)?.displayName}
+                                                </AlertTitle>
+                                                <AlertDescription display='block'>
+                                                    {!editProcess?.deadline[0].deadline_Court_Date_Add ? 'Sem Prazo': editProcess?.deadline[0].deadline_Court_Date_Add}
+                                                </AlertDescription>
+                                            </Box>
+                                        </Alert>
+
+                                        <Alert status='error' variant='left-accent'>
+                                            <AlertIcon />
+                                            <Box flex='1'>
+                                                <AlertTitle>
+                                                    {avocadoList.find(x => x.uid == editProcess?.deadline[1].deadline_Interpreter)?.displayName}
+                                                </AlertTitle>
+                                                <AlertDescription display='block'>
+                                                    {!editProcess?.deadline[1].deadline_Court_Date_Add ? 'Sem Prazo' : editProcess?.deadline[1].deadline_Court_Date_Add}
+                                                </AlertDescription>
+                                            </Box>
+                                        </Alert>
+                                    </Stack>
+                                )}
+                            </Box>
+
+                        </Flex>
 
                         {editProcess?.accountable && (
                             <Text
