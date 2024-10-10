@@ -274,7 +274,7 @@ const AnalystWaiting: NextPage = () => {
                     });
                     return;
                 }
-        
+
                 if(isCourtDeadline && (newCourtDate <= newInternalDate)) {
                     toast({
                         title: 'Processo',
@@ -286,30 +286,87 @@ const AnalystWaiting: NextPage = () => {
                     return;
                 }
 
-                const _internalDate = editProcess?.deadline[0].deadline_Internal_Date == (!isCourtDeadline ? null : newInternalDate.toLocaleDateString('pt-BR', optionsLocaleDateString));
-                const _courtDate = editProcess?.deadline[0].deadline_Court_Date == (!isCourtDeadline ? null : newCourtDate.toLocaleDateString('pt-BR', optionsLocaleDateString));
+                if(isCourtDeadlineAdd && (newInternalDateAdd <= new Date())) {
+                    toast({
+                        title: 'Processo',
+                        description: 'O Prazo Interno adicional deve ser maior que a data atual',
+                        status: 'error',
+                        duration: 9000,
+                        isClosable: true,
+                    });
+                    return;
+                }
+
+                if(isCourtDeadlineAdd && (newCourtDateAdd <= newInternalDateAdd)) {
+                    toast({
+                        title: 'Processo',
+                        description: 'O Prazo judicial adicional deve ser maior que o Prazo Interno',
+                        status: 'error',
+                        duration: 9000,
+                        isClosable: true,
+                    });
+                    return;
+                }
+
+                const _internalDate = editProcess?.deadline[0].deadline_Internal_Date == (
+                    !isCourtDeadline ? null : newInternalDate.toLocaleDateString('pt-BR', optionsLocaleDateString)
+                );
+                const _courtDate = editProcess?.deadline[0].deadline_Court_Date == (
+                    !isCourtDeadline ? null : newCourtDate.toLocaleDateString('pt-BR', optionsLocaleDateString)
+                );
+                const _internalDateAdd = editProcess?.deadline[0].deadline_Internal_Date == (
+                    !isCourtDeadlineAdd ? null : newInternalDateAdd.toLocaleDateString('pt-BR', optionsLocaleDateString)
+                );
+                const _courtDateAdd = editProcess?.deadline[0].deadline_Court_Date == (
+                    !isCourtDeadlineAdd ? null : newCourtDateAdd.toLocaleDateString('pt-BR', optionsLocaleDateString)
+                );
 
                 const _date1 = editProcess?.deadline[0].deadline_Internal_Date;
                 const _date2 = isCourtDeadline
                     ? newInternalDate.toLocaleDateString('pt-BR', optionsLocaleDateString)
                     : undefined;
-                const _date3 = isCourtDeadlineAdd
+                const _date3 = editProcess?.deadline[0].deadline_Internal_Date_Add;
+                const _date4 = isCourtDeadlineAdd
                     ? newInternalDateAdd.toLocaleDateString('pt-BR', optionsLocaleDateString)
                     : undefined;
                 const _court1 = editProcess?.deadline[0].deadline_Court_Date;
                 const _court2 = isCourtDeadline
                     ? newCourtDate.toLocaleDateString('pt-BR', optionsLocaleDateString)
                     : undefined;
-                const _court3 = isCourtDeadlineAdd
+                const _court3 = editProcess?.deadline[0].deadline_Court_Date_Add;
+                const _court4 = isCourtDeadlineAdd
                     ? newCourtDateAdd.toLocaleDateString('pt-BR', optionsLocaleDateString)
                     : undefined;
 
-                if(!_internalDate || !_courtDate) {
-                    await _handleSendMessageDivergentProcessOnThemis(_date1, _date2, _court1, _court2);
+// console.log(isCourtDeadlineAdd)
+// console.log(isCourtDeadline)
+// console.log(_internalDate, _courtDate, _internalDateAdd, _courtDateAdd)
+// console.log((_internalDate != _courtDate) || (_internalDateAdd != _courtDateAdd))
+// console.log(_date1)
+// console.log(_date2)
+// console.log(_date3)
+// console.log(_date4)
+// console.log(_court1)
+// console.log(_court2)
+// console.log(_court3)
+// console.log(_court4)
+
+
+                if((_internalDate != _courtDate) || (_internalDateAdd != _courtDateAdd)) {
+                    await _handleSendMessageDivergentProcessOnThemis(
+                        _date1,
+                        _date2,
+                        _date3,
+                        _date4,
+                        _court1,
+                        _court2,
+                        _court3,
+                        _court4
+                    );
                 } else {
                     if(_date2 && _court2) {
                         // só distribui se as datas estiverem preenchidas
-                        _handleSetFowardProcessOnThemis(_date2, _court2)
+                        _handleSetFowardProcessOnThemis(_date2, _court2, _date4, _court4)
                         .then(result => {
                             if(!result) {
                                 toast({
@@ -324,6 +381,7 @@ const AnalystWaiting: NextPage = () => {
                         });
                     }
                 }
+
 
                 const dataProcessNode2 = {
                     deadline_Internal_Date: _date2,
@@ -403,15 +461,23 @@ const AnalystWaiting: NextPage = () => {
     const _handleSendMessageDivergentProcessOnThemis = async(
         _date1?:string,
         _date2?: string,
+        _date3?:string,
+        _date4?: string,
         _court1?:string,
-        _court2?: string) => {
+        _court2?: string,
+        _court3?:string,
+        _court4?: string) => {
 
         const _mensagem = {
             'ProcessNumber': editProcess?.number,
             'InternalDate1': _date1 ?? 'Sem Prazo',
             'InternalDate2': _date2 ?? 'Sem Prazo',
+            'InternalDate3': _date3 ?? '',
+            'InternalDate4': _date4 ?? '',
             'CourtDate1': _court1 ?? 'Sem Prazo',
             'CourtDate2': _court2 ?? 'Sem Prazo',
+            'CourtDate3': _court3 ?? '',
+            'CourtDate4': _court4 ?? '',
             'Observation': editProcess?.decision
         };
 
@@ -484,7 +550,9 @@ const AnalystWaiting: NextPage = () => {
 
     const _handleSetFowardProcessOnThemis = async (
         _internalDate: string,
-        _courtDate: string) => {
+        _courtDate: string,
+        _internalDateAdd?: string,
+        _courtDateAdd?:string) => {
 
         const themisAvocadoId = avocadoList.find(
             x => x.uid == editProcess?.accountable
@@ -504,6 +572,8 @@ const AnalystWaiting: NextPage = () => {
         const _foward = {
             "data": _internalDate,
             "dataJudicial": _courtDate,
+            "dataInternaAdicional": _internalDateAdd,
+            "dataJudicialAdicional": _courtDateAdd,
             "descricao": editProcess?.decision,
             "advogado": {
                "id": themisAvocadoId
