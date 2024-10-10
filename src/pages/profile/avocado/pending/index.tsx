@@ -227,6 +227,28 @@ const AvocadoPending: NextPage = () => {
             return;
         }
 
+        if(isCourtDeadlineAdd && (internalDateAdd <= new Date())) {
+            toast({
+                title: 'Processo',
+                description: "O Prazo Interno deve ser maior que a data atual",
+                status: 'error',
+                duration: 9000,
+                isClosable: true,
+            });
+            return;
+        }
+
+        if(isCourtDeadlineAdd && (courtDateAdd <= internalDateAdd)) {
+            toast({
+                title: 'Processo',
+                description: "O Prazo judicial deve ser maior que o Prazo Interno",
+                status: 'error',
+                duration: 9000,
+                isClosable: true,
+            });
+            return;
+        }
+
         if(editProcess?.decision == '') {
             toast({
                 title: 'Processo',
@@ -240,6 +262,9 @@ const AvocadoPending: NextPage = () => {
 
         const _internalDate = isCourtDeadline ? internalDate.toLocaleDateString('pt-BR', optionsLocaleDateString) : null;
         const _courtDate = isCourtDeadline ? courtDate.toLocaleDateString('pt-BR', optionsLocaleDateString) : null;
+
+        const _internalDateAdd = isCourtDeadlineAdd ? internalDateAdd.toLocaleDateString('pt-BR', optionsLocaleDateString) : null;
+        const _courtDateAdd = isCourtDeadlineAdd ? courtDateAdd.toLocaleDateString('pt-BR', optionsLocaleDateString) : null;
 
         try {
             // const _processRef = doc(db, `proccess/${editProcess?.uid}`);
@@ -256,7 +281,7 @@ const AvocadoPending: NextPage = () => {
             .then(async update => {
 
                 if(_internalDate !== null && _courtDate !== null) {
-                    const forwardResult = await _handleSetFowardProcessOnThemis(_internalDate, _courtDate)
+                    const forwardResult = await _handleSetFowardProcessOnThemis(_internalDate, _courtDate, _internalDateAdd, _courtDateAdd)
                     .then(themisResult => {
                         toast({
                             title: 'Processo',
@@ -301,7 +326,9 @@ const AvocadoPending: NextPage = () => {
 
     const _handleSetFowardProcessOnThemis = async (
         _internalDate:string,
-        _courtDate:string) => {
+        _courtDate:string,
+        _internalDateAdd?: string | null,
+        _courtDateAdd?:string | null) => {
 
         const themisAvocadoId = avocadoList.find(x => x.uid == editProcess?.accountable)?.themis_Id;
 
@@ -319,6 +346,8 @@ const AvocadoPending: NextPage = () => {
         const _foward = {
             "data": _internalDate,
             "dataJudicial": _courtDate,
+            "dataInternaAdicional": _internalDateAdd,
+            "dataJudicialAdicional": _courtDateAdd,
             "descricao": editProcess?.decision,
             "advogado": {
                "id": themisAvocadoId
