@@ -338,14 +338,14 @@ const AnalystCreate: NextPage = () => {
                         <FormControl>
                             <FormLabel>Numero do processo</FormLabel>
                                 <Input
-                                    as={InputMask}
+                                    as={InputMask as any}
                                     variant={'filled'}
                                     mask='9999999-99.9999.9.99.9999'
-                                    placeholder='Número do Processo'
+                                    placeholder='Process number'
+                                    isRequired={true}
+                                    value={processNumber}
                                     onChange={event => setProcessNumber(event.target.value)}
                                     onBlur={event => _handleGetProcessOnThemis(event.target.value)}
-                                    value={processNumber}
-                                    maxWidth={'500px'}
                                 />
                         </FormControl>
 

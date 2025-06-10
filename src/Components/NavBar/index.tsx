@@ -23,6 +23,8 @@ import {LinkProps as ChakraLinkProps} from "@chakra-ui/react";
 import {useAuth} from '../../Contexts/AuthContext';
 import {useRouter} from 'next/router';
 import {FcGoogle} from 'react-icons/fc';
+import { logger } from '../../utils/logger';
+import { useNavigation } from '../../hooks/useNavigation';
 
 const Links = [
     { label: 'Home', to: '/', rule: ['admin', 'analyst', 'avocado', 'candidate', 'none'] },
@@ -64,13 +66,14 @@ export default function NavBar() {
     const {isOpen, onOpen, onClose} = useDisclosure();
     const router = useRouter();
     const {user, login, logout, role} = useAuth();
+    const { redirectToHome } = useNavigation();
 
     const _handleLogoutUser = async () => {
         try {
-            logout();
-            router.push('/');
+            await logout();
+            redirectToHome();
         } catch (error) {
-            console.log(error);
+            logger.error('Error during sign out:', error);
         }
     };
 

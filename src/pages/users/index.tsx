@@ -44,70 +44,71 @@ import {parseCookies} from "nookies";
 import DataTableRCkakra from "../../Components/Table";
 import { UserType } from '../../models/FirebaseTypes';
 import { api } from '../../services/api';
+import { logger } from '../../utils/logger';
+import { useNavigation } from '../../hooks/useNavigation';
+import { setCookie } from 'nookies';
 
 export default function UsersPage({data}: any) {
     const database = db;
     const toast = useToast();
     const route = useRouter();
-    // const usersCollection = collection(database, 'users');
     const {user, role, isAuthenticated} = useAuth();
     const {isOpen, onOpen, onClose} = useDisclosure();
     const [users, setUsers] = useState<UserType[]>([]);
     const [editUser, setEditUser] = useState<UserType | null>(null);
     const [editProfile, setEditProfile] = useState<string>('none');
     const {['upsa.role']: upsaRole} = parseCookies(null);
+    const { redirectToHome } = useNavigation();
 
     useEffect(() => {
-        if (user != null) {
-            if(upsaRole !='admin'
-                && upsaRole !='avocado') {
-                route.push('/');
+        logger.debug('Users page - useEffect triggered:', { 
+            user: !!user, 
+            upsaRole, 
+            userRole: user?.role,
+            contextRole: role,
+            isAuthenticated 
+        });
+
+        if (user) {
+            getUsers();
+            
+            // Sincronizar cookie com o role atual do usuário
+            if (user.role && user.role !== upsaRole) {
+                logger.debug(`Users page - Updating cookie role from ${upsaRole} to ${user.role}`);
+                setCookie(null, 'upsa.role', user.role, {
+                    maxAge: 30 * 24 * 60 * 60,
+                });
             }
         }
-        getUsers();
-    }, []);
+
+        // Só verificar permissões se o usuário estiver completamente carregado
+        if (user && isAuthenticated && user.role) {
+            const currentRole = user.role; // Usar apenas o role do usuário autenticado
+            
+            logger.debug('Users page - Permission check:', { 
+                currentRole,
+                allowedRoles: ['admin', 'avocado'],
+                isAllowed: ['admin', 'avocado'].includes(currentRole)
+            });
+
+            // Permitir acesso para admin e avocado
+            if (!['admin', 'avocado'].includes(currentRole)) {
+                logger.debug('Users page - ACCESS DENIED - Redirecting user with role:', currentRole);
+                redirectToHome();
+            } else {
+                logger.debug('Users page - ACCESS GRANTED for role:', currentRole);
+            }
+        }
+
+    }, [user, upsaRole, role, isAuthenticated, redirectToHome]);
 
     const getUsers = async () => {
-        // const usersQuery = query(usersCollection, orderBy('displayName'));
-        // const querySnapshot = await getDocs(usersQuery);
-
         const processQuery = await api.get('User?size=90000');
 
         const querySnapshot:UserType[] = processQuery.data.items;
 
-        // const result: UserType[] = [];
-        // querySnapshot.forEach((snapshot) => {
-        //     result.push({
-        //         uid: snapshot.uid,
-        //         displayName: snapshot.displayName,
-        //         role: snapshot.role,
-        //         email: snapshot.email,
-        //         photoURL: snapshot.photoURL,
-        //         // createdAt: snapshot.createdAt.toDate().toLocaleDateString('pt-BR')
-        //     } as UserType);
-        // });
         setUsers(querySnapshot);
 
-
-        // const processQuery = await api.get(`Process?size=90000`).then(processos => {
-            
-        //     const querySnapshot:ProcessType[] = processos.data.items;
-        //     let result: ProcessType[] = [];
-
-        //     querySnapshot.forEach(snapshot => {
-
-        //         const hasAccountability = snapshot?.deadline?.some(x => x.deadline_Interpreter == user?.uid);
-        //         const hasTwoDeadlines = snapshot?.deadline?.length == 2;
-    
-        //         if(hasTwoDeadlines && hasAccountability) {
-        //             result.push(snapshot);
-        //         }
-        //     });
-
-        //     setProcessList(result);
-        // }).catch(function (error) {
-        //     console.log(error);
-        // });
     };
 
     const updateUserModal = (item: UserType) => {
@@ -121,11 +122,6 @@ export default function UsersPage({data}: any) {
             const _user = await api.post(`User/${editUser?.uid}`, {
                 role: editProfile
             });
-
-            // const _user = doc(db, `Users/${editUser?.uid}`);
-            // await updateDoc(_user, {
-            //     role: editProfile
-            // } as UserType);
 
             if(!_user.data.success) {
                 toast({
@@ -146,7 +142,7 @@ export default function UsersPage({data}: any) {
             });
             getUsers();
         } catch (error) {
-            console.log(error);
+            logger.error('Error updating user:', error);
         }
 
         onClose();
@@ -167,7 +163,7 @@ export default function UsersPage({data}: any) {
 
             getUsers();
         } catch (error) {
-            console.log(error);
+            logger.error('Error deleting user:', error);
         }
 
         onClose();
@@ -273,6 +269,20 @@ export default function UsersPage({data}: any) {
         <Fragment>
             <NavBar/>
             <Container minH={'calc(100vh - 142px)'} maxW='container.xl' py={10}>
+                
+                {/* Debug Info - Remover após debug */}
+                {process.env.NODE_ENV === 'development' && (
+                    <Box mb={4} p={4} bg="yellow.100" borderRadius="md">
+                        <Text fontWeight="bold">Debug Info:</Text>
+                        <Text>User: {user ? 'Logged in' : 'Not logged in'}</Text>
+                        <Text>User Role: {user?.role || 'undefined'}</Text>
+                        <Text>Context Role: {role || 'undefined'}</Text>
+                        <Text>Cookie Role: {upsaRole || 'undefined'}</Text>
+                        <Text>Is Authenticated: {isAuthenticated ? 'Yes' : 'No'}</Text>
+                        <Text>Current Role: {user?.role || role || upsaRole || 'undefined'}</Text>
+                    </Box>
+                )}
+
                 <Heading color={'gray.600'}>
                     Usuários
                 </Heading>
@@ -327,8 +337,8 @@ export default function UsersPage({data}: any) {
                                 placeholder='Escolha o perfil'
                                 size={'md'}
                                 variant={'flushed'}
-                                // value={editUser?.role}
                                 onChange={(event) => setEditProfile(event.target.value)}
+                                aria-label="Selecionar perfil do usuário"
                             >
                                 <option value='none' selected={editUser?.role == 'none'}>Candidato</option>
                                 <option value='analyst' selected={editUser?.role == 'analyst'}>Analista</option>
@@ -387,45 +397,6 @@ export default function UsersPage({data}: any) {
 
 
 export const getServerSideProps: GetServerSideProps = async (ctx) => {
-    // const database = db;
-    // const usersCollection = collection(db, 'users');
-
-    // let result:UserType[] = [];
-
-    // const getUsers = async () => {
-    //     const usersQuery = query(usersCollection, where('role', '!=', 'admin'));
-    //     const querySnapshot = await getDocs(usersQuery);
-    //     // const result: QueryDocumentSnapshot<DocumentData>[] = [];
-
-    //     querySnapshot.forEach((snapshot) => {
-    //         result.push({
-    //             uid: snapshot.id,
-    //             displayName: snapshot.data().displayName,
-    //             role: snapshot.data().role,
-    //             email: snapshot.data().email,
-    //             photoURL: snapshot.data().photoURL,
-    //             // createdAt: snapshot.data().createdAt.toDate().toLocaleDateString('pt-BR', {
-    //             //     day: '2-digit',
-    //             //     month: 'long',
-    //             //     year: 'numeric'
-    //             // })
-    //             createdAt: snapshot.data().createdAt.toDate().toLocaleDateString('pt-BR')
-    //         } as UserType);
-    //     });
-    // };
-
-    // const {['upsa.role']: upsaRole} = parseCookies(ctx);
-    // const acceptedRules = ['admin', 'avocado'];
-
-    // if (!acceptedRules.includes(upsaRole)) {
-    //     return {
-    //         redirect: {
-    //             destination: '/',
-    //             permanent: false,
-    //         },
-    //     }
-    // }
-
     return {
         props: {}
     };

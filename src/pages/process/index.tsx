@@ -55,6 +55,9 @@ import { api } from '../../services/api';
 import { ProcessType } from '../../models/ThemisTypes';
 import { UserType } from '../../models/FirebaseTypes';
 import { useRouter } from 'next/router';
+import { logger } from '../../utils/logger';
+import { useNavigation } from '../../hooks/useNavigation';
+import { useIsMounted } from '../../hooks/useIsMounted';
 
 const ProcessListPage: NextPage = () => {
     // const database = db;
@@ -77,17 +80,17 @@ const ProcessListPage: NextPage = () => {
     const [processDaysFinal, setProcessDaysFinal] = useState(0);
     const {['upsa.role']: upsaRole} = parseCookies(null);
     const route = useRouter();
+    const { redirectToHome } = useNavigation();
+    const isMounted = useIsMounted();
 
     useEffect(() => {
-        getProcess().then(()=>{
-            if (user != null) {
-                if(upsaRole !='admin') {
-                    route.push('/');
-                }
-            }
-        });
-        getAnalystList();
-    }, []);
+        if (user) {
+            getProcess();
+            getAnalystList();
+        }
+
+        if(upsaRole === null || upsaRole === undefined)  redirectToHome();
+    }, [user, upsaRole, redirectToHome]);
 
     const getProcess = async () => {
         // const processQuery = query(proccessCollection, where('active', '==', true));
@@ -159,7 +162,7 @@ const ProcessListPage: NextPage = () => {
 
         const result = api.post(`Process/${process.uid}`, data)
             .then(result => {
-                console.log(result);
+                logger.debug('Process updated successfully:', result);
             });
     };
 
@@ -198,7 +201,7 @@ const ProcessListPage: NextPage = () => {
 
         const result = api.put(`Process/${process.uid}`, data)
             .then(result => {
-                console.log(result);
+                logger.debug('Process created successfully:', result);
             });
     };
 
@@ -207,7 +210,7 @@ const ProcessListPage: NextPage = () => {
         .then(usuarios => {
             setAnalystList(usuarios.data.items ?? []);
         }).catch(function (error) {
-            console.error(error);
+            logger.error('Error fetching analyst list:', error);
         });
     };
 
@@ -284,8 +287,7 @@ const ProcessListPage: NextPage = () => {
         api.get(`themis/process/${item.number}`).then(data => {
             
         }).catch(function (error) {
-            // handle error
-            console.error(error);
+            logger.error('Error fetching process from Themis:', error);
         });
 
         setEditProcess({...item, ['updated_At']: new Date() });
@@ -368,7 +370,7 @@ const ProcessListPage: NextPage = () => {
             // });
 
         } catch (error) {
-            console.log(error);
+            logger.error('Error updating process:', error);
 
             toast({
                 title: 'Processo',
@@ -535,7 +537,7 @@ const ProcessListPage: NextPage = () => {
                         <FormControl>
                             <FormLabel>Numero do processo</FormLabel>
                             <Input
-                                as={InputMask}
+                                as={InputMask as any}
                                 variant={'filled'}
                                 mask='9999999-99.9999.9.99.9999'
                                 placeholder='Process number'
@@ -646,12 +648,13 @@ const ProcessListPage: NextPage = () => {
                         <FormControl>
                             <FormLabel>Numero do processo</FormLabel>
                             <Input
-                                as={InputMask}
+                                as={InputMask as any}
                                 variant={'filled'}
                                 mask='9999999-99.9999.9.99.9999'
                                 placeholder='Process number'
                                 isRequired={true}
                                 value={editProcess?.number}
+                                onChange={event => setEditProcess(editProcess != null ? {...editProcess, ['number']:event.target.value} : null)}
                                 readOnly={true}
                             />
                         </FormControl>
