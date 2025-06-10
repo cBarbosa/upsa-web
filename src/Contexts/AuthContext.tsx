@@ -27,6 +27,7 @@ import {
 } from 'nookies';
 import { api } from "../services/api";
 import { UserType } from "../models/FirebaseTypes";
+import { logger } from '../utils/logger';
 
 interface IUser extends User {
     role: string;
@@ -63,98 +64,75 @@ const AuthProvider = ({ children }: React.PropsWithChildren ) => {
             if(user) {
                 api.get(`User/${user.uid}`).then(res => {
                     if(res.data.success) {
-                        setUser(res.data.data);
+                        const userData = res.data.data;
+                        setUser(userData);
+                        
+                        // Definir o role do contexto quando o usuário for carregado
+                        if (userData.role) {
+                            setRole(userData.role);
+                            
+                            // Sincronizar cookie
+                            setCookie(null, 'upsa.role', userData.role, {
+                                maxAge: 30 * 24 * 60 * 60,
+                            });
+                        }
                     }
+                }).catch(error => {
+                    logger.error('Error fetching user data:', error);
                 });
             } else {
                 setUser(null);
+                setRole('none');
+                destroyCookie(null, 'upsa.role');
             }
             
         });
         return unsubscribe;
     }, []);
 
-    useEffect(()=> {
-        getDbLoggedProfile().then((result) => {
-            setRole(result);
-        });
-    }, [user]);
-
     const login = async () => {
         try {
             const { user } = await signInWithPopup(authentication, new GoogleAuthProvider());
-            let res = user as IUser;
 
             const userDB = await api.get(`User/${user.uid}`);
 
-            if(!userDB.data.success)    {
-                await api.put(`User/${res.uid}`, {
-                    displayName: res.displayName,
-                    email: res.email,
-                    phoneNumber: res.phoneNumber,
-                    photoUrl: res.photoURL,
-                    providerId: res.providerId,
-                    role: res.role,
+            if(!userDB.data.success) {
+                await api.put(`User/${user.uid}`, {
+                    displayName: user.displayName,
+                    email: user.email,
+                    phoneNumber: user.phoneNumber,
+                    photoUrl: user.photoURL,
+                    providerId: user.providerId,
+                    role: 'none', // Role padrão para novos usuários
                     createdAt: serverTimestamp()
-                  });
+                });
             }
 
-            const snap = userDB.data?.data;
-            res.role = snap.role;
-
-            // console.log('userDb', userDB);
-            // console.log('snap', snap);
-            // console.log('role', res.role);
-
-            // const ref = doc(database, 'users', res.uid);
-            // const snap = await getDoc(ref);
-
-            // if(!snap.exists()) {
-            //     res.role = 'none';
-            //     await setDoc(doc(database, 'users', res.uid), {
-            //         displayName: res.displayName,
-            //         email: res.email,
-            //         phoneNumber: res.phoneNumber,
-            //         photoURL: res.photoURL,
-            //         providerId: res.providerId,
-            //         role: res.role,
-            //         createdAt: serverTimestamp()
-            //       });
-            // };
-
-            // res.role = snap.get('role');
+            const userData = userDB.data?.data;
             
-            setRole(res.role);
-            setUser(snap);
-            setCookie(null, 'upsa.role', res.role, {
-                maxAge: 30 * 24 * 60 * 60,
-            });
+            if (userData) {
+                setUser(userData);
+                setRole(userData.role || 'none');
+                
+                // Sincronizar cookie
+                setCookie(null, 'upsa.role', userData.role || 'none', {
+                    maxAge: 30 * 24 * 60 * 60,
+                });
+            }
 
         } catch (error) {
-            console.error(error);
+            logger.error('Error in user authentication:', error);
         }
     }
 
     const logout = async () => {
         try {
-            await signOut(authentication).then(r => {
-                destroyCookie(null, 'upsa.role');
-            });
+            await signOut(authentication);
+            setUser(null);
+            setRole('none');
+            destroyCookie(null, 'upsa.role');
         } catch (error) {
-            console.error(error);
-        }
-    }
-
-    const getDbLoggedProfile = async () => {
-        try {
-            if(role === '' && user) {
-                const ref = doc(database, 'users', user.uid);
-                const snap = await getDoc(ref);
-                return snap.get('role');
-            }
-            return '';
-        } catch (error) {
-            console.error(error);
+            logger.error('Error signing out user:', error);
         }
     }
 

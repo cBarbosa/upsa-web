@@ -55,10 +55,15 @@ import {
 } from '../../../../models/ThemisTypes';
 import { UserType } from '../../../../models/FirebaseTypes';
 import { optionsLocaleDateString } from "../create";
+import { logger } from '../../../../utils/logger';
+import { useNavigation } from '../../../../hooks/useNavigation';
+import { useIsMounted } from '../../../../hooks/useIsMounted';
 
 const AnalystWaiting: NextPage = () => {
     const toast = useToast();
     const route = useRouter();
+    const { redirectToHome } = useNavigation();
+    const isMounted = useIsMounted();
     // const database = db;
     // const proccessCollection = collection(database, 'proccess');
     const { role, user } = useAuth();
@@ -77,7 +82,9 @@ const AnalystWaiting: NextPage = () => {
     const [isCourtDeadlineAdd, setIsCourtDeadlineAdd] = useState(false);
     const [newInternalDateAdd, setNewInternalDateAdd] = useState(new Date());
     const [newCourtDateAdd, setNewCourtDateAdd] = useState(new Date());
+
     const [loading, setLoading] = useState(false);
+    const [isSaving, setIsSaving] = useState(false);
 
     useEffect(() => {
 
@@ -86,9 +93,9 @@ const AnalystWaiting: NextPage = () => {
             getAvocadoList();
         }
 
-        if(upsaRole !== 'analyst')  route.push('/');
+        if(upsaRole !== 'analyst')  redirectToHome();
 
-    }, [user]);
+    }, [user, upsaRole, redirectToHome]);
 
     const getProcessList = async () => {
         setLoading(true);
@@ -131,9 +138,13 @@ const AnalystWaiting: NextPage = () => {
             setProcessList(result);
         })
         .catch(function (error) {
-            console.error(error);
+            logger.error('Error fetching process list:', error);
         })
-        .finally(() => setLoading(false));
+        .finally(() => {
+            if (isMounted()) {
+                setLoading(false);
+            }
+        });
     };
 
     const getAvocadoList = async () => {
@@ -152,7 +163,7 @@ const AnalystWaiting: NextPage = () => {
 
             setAvocadoList(usuarios.data.items ?? []);
         }).catch(function (error) {
-            console.error(error);
+            logger.error('Error fetching avocado list:', error);
         });
     };
 
@@ -242,6 +253,7 @@ const AnalystWaiting: NextPage = () => {
     };
 
     const _handleUpdateProcess = async () => {
+        setIsSaving(true);
 
         try {
             // const _processRef = doc(db, `proccess/${editProcess?.uid}`);
@@ -261,6 +273,7 @@ const AnalystWaiting: NextPage = () => {
                         duration: 9000,
                         isClosable: true,
                     });
+                    setIsSaving(false);
                     return;
                 }
 
@@ -272,6 +285,7 @@ const AnalystWaiting: NextPage = () => {
                         duration: 9000,
                         isClosable: true,
                     });
+                    setIsSaving(false);
                     return;
                 }
 
@@ -283,6 +297,7 @@ const AnalystWaiting: NextPage = () => {
                         duration: 9000,
                         isClosable: true,
                     });
+                    setIsSaving(false);
                     return;
                 }
 
@@ -294,6 +309,7 @@ const AnalystWaiting: NextPage = () => {
                         duration: 9000,
                         isClosable: true,
                     });
+                    setIsSaving(false);
                     return;
                 }
 
@@ -305,6 +321,7 @@ const AnalystWaiting: NextPage = () => {
                         duration: 9000,
                         isClosable: true,
                     });
+                    setIsSaving(false);
                     return;
                 }
 
@@ -338,56 +355,11 @@ const AnalystWaiting: NextPage = () => {
                     ? newCourtDateAdd.toLocaleDateString('pt-BR', optionsLocaleDateString)
                     : undefined;
 
-// console.log(isCourtDeadlineAdd)
-// console.log(isCourtDeadline)
-// console.log(_internalDate, _courtDate, _internalDateAdd, _courtDateAdd)
-// console.log((_internalDate != _courtDate) || (_internalDateAdd != _courtDateAdd))
-// console.log(_date1)
-// console.log(_date2)
-// console.log(_date3)
-// console.log(_date4)
-// console.log(_court1)
-// console.log(_court2)
-// console.log(_court3)
-// console.log(_court4)
-
-
-                if((_internalDate != _courtDate) || (_internalDateAdd != _courtDateAdd)) {
-                    await _handleSendMessageDivergentProcessOnThemis(
-                        _date1,
-                        _date2,
-                        _date3,
-                        _date4,
-                        _court1,
-                        _court2,
-                        _court3,
-                        _court4
-                    );
-                } else {
-                    if(_date2 && _court2) {
-                        // só distribui se as datas estiverem preenchidas
-                        _handleSetFowardProcessOnThemis(_date2, _court2, _date4, _court4)
-                        .then(result => {
-                            if(!result) {
-                                toast({
-                                    title: 'Processo (Themis)',
-                                    description: 'Não foi possível distribuir o processo',
-                                    status: 'error',
-                                    duration: 9000,
-                                    isClosable: true,
-                                });
-                                return;
-                            }
-                        });
-                    }
-                }
-
-
                 const dataProcessNode2 = {
                     deadline_Internal_Date: _date2,
                     deadline_Court_Date: _court2,
-                    deadline_Internal_Date_Add: _date3,
-                    deadline_Court_Date_Add: _court3,
+                    deadline_Internal_Date_Add: _date4,
+                    deadline_Court_Date_Add: _court4,
                     deadline_Interpreter: user?.uid,
                     checked: false,
                     created_At: new Date()
@@ -395,18 +367,58 @@ const AnalystWaiting: NextPage = () => {
 
                 editProcess?.deadline.push(dataProcessNode2);
 
-                const result = await api.post(`Process/${editProcess?.uid!}`, editProcess)
-                .then(update => {
-                    toast({
-                        title: 'Processo',
-                        description: update.data.message,
-                        status: 'success',
-                        duration: 9000,
-                        isClosable: true,
-                    });
-                }).catch(function (error) {
-                    console.error(error);
-                });
+                // if((_internalDate != _courtDate) || (_internalDateAdd != _courtDateAdd)) {
+                //     await _handleSendMessageDivergentProcessOnThemis(
+                //         editProcess,
+                //         _date1,
+                //         _date2,
+                //         _date3,
+                //         _date4,
+                //         _court1,
+                //         _court2,
+                //         _court3,
+                //         _court4
+                //     );
+
+                // } else {
+                     if(_date2 && _court2) {
+                //         // só distribui se as datas estiverem preenchidas
+                        _handleSetFowardProcessOnThemis(editProcess, _date2, _court2, _date4, _court4)
+                            .then(result => {
+                                
+                                toast({
+                                    title: 'Processo (Themis)',
+                                    description: result?.message ?? 'Não foi possível distribuir o processo',
+                                    status: result?.success ? 'success' : 'error',
+                                    duration: 9000,
+                                    isClosable: true
+                                });
+
+                                if(result?.success){
+                                    setIsSaving(false);
+                                    _closeModal();
+                                }
+                            });
+                     } else {
+                        const result = await api.post(`Process/${editProcess?.uid!}`, editProcess)
+                            .then(update => {
+                                toast({
+                                    title: 'Processo',
+                                    description: update.data?.message ?? 'Processo atualizado com sucesso',
+                                    status: update.data?.success ? 'success' : 'error',
+                                    duration: 9000,
+                                    isClosable: true,
+                                });
+
+                                if(update.data?.success){
+                                    setIsSaving(false);
+                                    _closeModal();
+                                }
+                        }).catch(function (error) {
+                            logger.error('Error updating process (distribution):', error);
+                        });
+                     }
+                
             } else { {/* Atualização do processo */}
 
                 const dataProcessNode1 = {
@@ -426,24 +438,28 @@ const AnalystWaiting: NextPage = () => {
 
                 editProcess?.deadline.splice(index, 1);
                 editProcess?.deadline.push(dataProcessNode1);
-    
+
                 const result = await api.post(`Process/${editProcess?.uid}`, editProcess)
                     .then(update => {
                     toast({
                         title: 'Processo',
-                        description: update.data.message,
-                        status: 'success',
+                        description: update.data?.message,
+                        status: update.data?.success ? 'success' : 'error',
                         duration: 9000,
                         isClosable: true,
                     });
+
+                    if(update.data?.success) {
+                        _closeModal();
+                        setIsSaving(false);
+                    }
                 }).catch(function (error) {
-                    console.error(error);
+                    logger.error('Error updating process (update):', error);
                 });
             }
 
-            await getProcessList();
         } catch (error) {
-            console.error(error);
+            logger.error('Error in _handleUpdateProcess:', error);
 
             toast({
                 title: 'Processo',
@@ -452,13 +468,20 @@ const AnalystWaiting: NextPage = () => {
                 duration: 9000,
                 isClosable: true,
             });
+        } finally {
+            
         }
 
+    };
+
+    const _closeModal = async (): Promise<void> => {
+        await getProcessList();
         cleanVariables();
         onClose();
     };
 
     const _handleSendMessageDivergentProcessOnThemis = async(
+        _process: ProcessType,
         _date1?:string,
         _date2?: string,
         _date3?:string,
@@ -486,14 +509,14 @@ const AnalystWaiting: NextPage = () => {
                 if(result.data) {
                     toast({
                         title: 'Processo',
-                        description: "Divergência enviada para os advogados",
-                        status: 'info',
+                        description: result.data.message,
+                        status: result.data.success ? 'success' : 'error',
                         duration: 9000,
                         isClosable: true,
                     });
                 }
             }).catch(function (error) {
-                console.error(error);
+                logger.error('Error sending divergent message to Themis:', error);
             });
     }
 
@@ -516,7 +539,7 @@ const AnalystWaiting: NextPage = () => {
                 });
             });
         }).catch(function (error) {
-            console.error(error);
+            logger.error('Error getting process from Themis:', error);
         });
 
         return true;
@@ -544,11 +567,12 @@ const AnalystWaiting: NextPage = () => {
             }
 
         }).catch(function (error) {
-            console.error(error);
+            logger.error('Error updating process with Themis ID:', error);
         });
     };
 
     const _handleSetFowardProcessOnThemis = async (
+        _processUpdate: ProcessType,
         _internalDate: string,
         _courtDate: string,
         _internalDateAdd?: string,
@@ -580,28 +604,28 @@ const AnalystWaiting: NextPage = () => {
             }
         };
 
-        return api.put(`themis/process/add-foward/${editProcess?.number}`, _foward)
+        const processUpdate = {
+            process: _processUpdate,
+            foward: _foward
+        };
+
+        logger.info('processUpdate', processUpdate);
+
+        return api.put(`themis/process/add-foward/${editProcess?.number}`, processUpdate)
             .then(result => {
-            if(result.data) {
+
+            return result.data;
+
+            }).catch(function (error) {
+                logger.error('Error distributing process:', error);
                 toast({
                     title: 'Processo (Themis)',
-                    description: 'Processo distribuido com sucesso',
-                    status: 'success',
+                    description: error ??'Não foi possível distribuir o processo',
+                    status: 'error',
                     duration: 9000,
                     isClosable: true
                 });
-            }
-            return result.data;
-        }).catch(function (error) {
-            console.error(error);
-            toast({
-                title: 'Processo (Themis)',
-                description: 'Não foi possível distribuir o processo',
-                status: 'error',
-                duration: 9000,
-                isClosable: true
             });
-        });
     };
 
     const _handlePostProcessOnThemis = async (processNumber:string) => {
@@ -672,7 +696,7 @@ const AnalystWaiting: NextPage = () => {
                 });
             }
         }).catch(function (error) {
-            console.error(error);
+            logger.error('Error posting process to Themis:', error);
             toast({
                 title: 'Processo (Themis)',
                 description: 'Não foi cadastrar o processo',
@@ -857,7 +881,7 @@ const AnalystWaiting: NextPage = () => {
                             )}
                             <FormLabel>Numero do processo</FormLabel>
                             <Input
-                                as={InputMask}
+                                as={InputMask as any}
                                 variant={'filled'}
                                 mask='9999999-99.9999.9.99.9999'
                                 placeholder='Process number'
@@ -1025,6 +1049,7 @@ const AnalystWaiting: NextPage = () => {
                                 variant={'filled'}
                                 value={editProcess?.accountable}
                                 onChange={event => setEditProcess(editProcess != null ? {...editProcess, ['accountable']:event.target.value} : null)}
+                                aria-label="Selecionar responsável pelo processo"
                             >
                                 {avocadoList?.map((adv) => {
                                     return(
@@ -1195,6 +1220,10 @@ const AnalystWaiting: NextPage = () => {
                             colorScheme='blue'
                             mr={3}
                             onClick={() => _handleUpdateProcess()}
+                            isLoading={isSaving}
+                            loadingText="Salvando..."
+                            isDisabled={isSaving}
+                            type="button"
                         >
                             Salvar
                         </Button>
@@ -1202,6 +1231,7 @@ const AnalystWaiting: NextPage = () => {
                             colorScheme='red'
                             mr={3}
                             hidden={true}
+                            type="button"
                         >
                             Deletar
                         </Button>

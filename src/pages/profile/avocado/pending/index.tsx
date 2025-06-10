@@ -60,6 +60,7 @@ import { api } from "../../../../services/api";
 import { ProcessType, DeadLineProcessType } from '../../../../models/ThemisTypes';
 import { UserType } from '../../../../models/FirebaseTypes';
 import { optionsLocaleDateString } from "../../analyst/create";
+import logger from "../../../../utils/logger";
 
 const AvocadoPending: NextPage = () => {
 
@@ -276,61 +277,55 @@ const AvocadoPending: NextPage = () => {
 
             editProcess!.deadline = [];
             editProcess!.deadline = newDeadlines;
+            editProcess!.date_Final = _courtDate ?? 'Sem Prazo';
 
-            const result = await api.post(`Process/${editProcess?.uid}`, {...editProcess, 'date_final': _courtDate ?? 'Sem Prazo'})
-            .then(async update => {
+            if(_internalDate !== null && _courtDate !== null) {
 
-                if(_internalDate !== null && _courtDate !== null) {
-                    const forwardResult = await _handleSetFowardProcessOnThemis(_internalDate, _courtDate, _internalDateAdd, _courtDateAdd)
+                await _handleSetFowardProcessOnThemis(editProcess!, _internalDate!, _courtDate!, _internalDateAdd!, _courtDateAdd!)
                     .then(themisResult => {
                         toast({
-                            title: 'Processo',
-                            description: 'Processo distribuído com sucesso',
-                            status: 'success',
+                            title: 'Processo (Themis)',
+                            description: themisResult?.message ?? 'Não foi possível distribuir o processo',
+                            status: themisResult?.success ? 'success' : 'error',
                             duration: 9000,
-                            isClosable: true,
+                            isClosable: true
                         });
+
+                        if(themisResult?.success) {
+                            // setIsSaving(false);
+                            //_closeModal();
+                        }
                     }).catch(function (error) {
                         console.error(error);
                     });
-                }
-
-                toast({
-                    title: 'Processo',
-                    description: 'Processo atualizado com sucesso',
-                    status: 'success',
-                    duration: 9000,
-                    isClosable: true
-                });
-
-            }).catch(function (error) {
-                console.error(error);
-            });
+            }
 
         } catch (error) {
-            console.error(error);
 
             toast({
                 title: 'Processo',
-                description: 'Erro atualizando o processo',
+                description: `Erro atualizando o processo: ${error}`,
                 status: 'error',
                 duration: 9000,
                 isClosable: true,
             });
+        } finally {
+            await getProcessList();
+            cleanVariables();
+            onClose();
         }
-
-        cleanVariables();
-        onClose();
-        getProcessList();
     };
 
     const _handleSetFowardProcessOnThemis = async (
+        _processUpdate: ProcessType,
         _internalDate:string,
         _courtDate:string,
         _internalDateAdd?: string | null,
         _courtDateAdd?:string | null) => {
 
-        const themisAvocadoId = avocadoList.find(x => x.uid == editProcess?.accountable)?.themis_Id;
+        const themisAvocadoId = avocadoList.find(
+            x => x.uid == editProcess?.accountable
+        )?.themis_Id;
 
         if(!themisAvocadoId) {
             toast({
@@ -354,28 +349,28 @@ const AvocadoPending: NextPage = () => {
             }
         };
 
-        return api.put(`themis/process/add-foward/${editProcess?.number}`, _foward).then(result =>
-        {
-            if(result.data) {
+        const processUpdate = {
+            process: _processUpdate,
+            foward: _foward
+        };
+
+        logger.info('processUpdate', processUpdate);
+
+        return api.put(`themis/process/add-foward/${editProcess?.number}`, processUpdate)
+            .then(result => {
+
+                return result.data;
+
+            }).catch(function (error) {
+                logger.error('Error distributing process:', error);
                 toast({
                     title: 'Processo (Themis)',
-                    description: 'Processo distribuido com sucesso',
-                    status: 'success',
+                    description: error ??'Não foi possível distribuir o processo',
+                    status: 'error',
                     duration: 9000,
-                    isClosable: true,
+                    isClosable: true
                 });
-            }
-            return result.data;
-        }).catch(function (error) {
-            console.error(error);
-            toast({
-                title: 'Processo (Themis)',
-                description: `Não foi possível distribuir o processo.\n${error}`,
-                status: 'error',
-                duration: 9000,
-                isClosable: true,
             });
-        });
     };
 
     const columns = useMemo(
@@ -520,7 +515,7 @@ const AvocadoPending: NextPage = () => {
                         <FormControl>
                             <FormLabel>Numero do processo</FormLabel>
                             <Input
-                                as={InputMask}
+                                as={InputMask as any}
                                 variant={'filled'}
                                 mask='9999999-99.9999.9.99.9999'
                                 placeholder='Process number'

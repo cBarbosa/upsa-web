@@ -255,7 +255,7 @@ const AvocadoDone: NextPage = () => {
                             )}
                             <FormLabel>Numero do processo</FormLabel>
                             <Input
-                                as={InputMask}
+                                as={InputMask as any}
                                 variant={'filled'}
                                 mask='9999999-99.9999.9.99.9999'
                                 placeholder='Process number'
