@@ -1,6 +1,5 @@
 import Document, { DocumentContext, Head, Html, Main, NextScript } from 'next/document';
 import { GA_TRACKING_ID } from '../scripts/gtag';
-import { GoogleFonts } from 'next-google-fonts';
 
 declare global {
     interface Window {
@@ -19,19 +18,13 @@ export default class MyDocument extends Document {
     
     render() {
 
-        // Add splitbee event tracking
-        function handleState() {
-            window.splitbee.track("Button Click");
-        }
-    
-        if (typeof window !== "undefined") {
-            window.addEventListener("load", handleState);
-        }
-
         return(
             <Html>
-                <GoogleFonts href="https://fonts.googleapis.com/css?family=Inter&display=swap" />
                 <Head>
+                    <link
+                        href="https://fonts.googleapis.com/css?family=Inter&display=swap"
+                        rel="stylesheet"
+                    />
                     {process.env.NODE_ENV === "production" && (
                         <>
                             {/* Global Site Tag (gtag.js) - Google Analytics */}
@@ -57,6 +50,21 @@ export default class MyDocument extends Document {
                 <body>
                     <Main />
                     <NextScript />
+                    <script
+                        dangerouslySetInnerHTML={{
+                            __html: `
+                                // Add splitbee event tracking - only runs on client
+                                function handleState() {
+                                    if (typeof window !== "undefined" && window.splitbee) {
+                                        window.splitbee.track("Button Click");
+                                    }
+                                }
+                                if (typeof window !== "undefined") {
+                                    window.addEventListener("load", handleState);
+                                }
+                            `,
+                        }}
+                    />
                 </body>
             </Html>
         );
